@@ -1,0 +1,24 @@
+[package]
+name = "libwinit"
+version = "0.1.0"
+authors = ["Aliaksei Syrel <alex.syrel@gmail.com>"]
+
+[dependencies]
+winit = { git = "https://github.com/syrel/winit", rev = "9a5827e47b60a038a097c2746ea8b325b0b5ac98" }
+libc = "0.2.8"
+boxer = { git = "https://github.com/feenkcom/gtoolkit-boxer", rev = "8ffd345b6aabda55c5ab1b4914f6f3e5f92918d4" }
+log = "0.4"
+env_logger = "0.8"
+
+[lib]
+name = "Winit"
+crate-type = ["cdylib"]
+
+[profile.dev]
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+
+[profile.release]
+opt-level = 3
