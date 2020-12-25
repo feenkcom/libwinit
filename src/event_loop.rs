@@ -369,7 +369,7 @@ fn winit_event_loop_drop_proxy(_ptr: &mut *mut ValueBox<WinitEventLoopProxy>) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #[no_mangle]
-fn winit_events_loop_get_primary_monitor(
+fn winit_event_loop_get_primary_monitor(
     _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<MonitorHandle> {
     _ptr_event_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
@@ -381,11 +381,11 @@ fn winit_events_loop_get_primary_monitor(
 }
 
 #[no_mangle]
-fn winit_primary_monitor_free(_ptr_monitor_id: &mut *mut ValueBox<MonitorHandle>) {
-    _ptr_monitor_id.drop();
+fn winit_primary_monitor_get_hidpi_factor(monitor_id_ptr: *mut ValueBox<MonitorHandle>) -> f64 {
+    monitor_id_ptr.with_not_null_return(1.0, |monitor_id| monitor_id.scale_factor())
 }
 
 #[no_mangle]
-fn winit_primary_monitor_get_hidpi_factor(_ptr_monitor_id: *mut ValueBox<MonitorHandle>) -> f64 {
-    _ptr_monitor_id.with_not_null_return(1.0, |monitor_id| monitor_id.scale_factor())
+fn winit_primary_monitor_drop(ptr: &mut *mut ValueBox<MonitorHandle>) {
+    ptr.drop();
 }
