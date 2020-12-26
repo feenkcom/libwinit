@@ -412,6 +412,7 @@ name = "libwinit"
 version = "0.1.0"
 dependencies = [
  "boxer",
+ "cocoa",
  "env_logger",
  "libc",
  "log",

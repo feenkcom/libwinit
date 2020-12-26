@@ -258,12 +258,12 @@ pub fn winit_polling_event_loop_drop(_ptr: &mut *mut ValueBox<PollingEventLoop>)
 }
 
 #[no_mangle]
-pub fn winit_create_events_loop() -> *mut ValueBox<WinitEventLoop> {
+pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
     ValueBox::new(WinitEventLoop::with_user_event()).into_raw()
 }
 
 #[no_mangle]
-pub fn winit_destroy_events_loop(_ptr: &mut *mut ValueBox<WinitEventLoop>) {
+pub fn winit_event_loop_drop(_ptr: &mut *mut ValueBox<WinitEventLoop>) {
     _ptr.drop();
 }
 

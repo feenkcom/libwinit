@@ -7,6 +7,9 @@ extern crate winit;
 extern crate log;
 extern crate env_logger;
 
+#[cfg(target_os = "macos")]
+extern crate cocoa;
+
 pub mod enums;
 pub mod event_loop;
 pub mod events;
