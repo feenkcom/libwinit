@@ -1,14 +1,15 @@
+use crate::enums::WinitCursorIcon;
+use crate::event_loop::WinitEventLoop;
+use crate::winit_convert_window_id;
 use boxer::number::BoxerUint128;
 use boxer::point::BoxerPointI32;
 use boxer::size::BoxerSizeU32;
 use boxer::string::BoxerString;
 use boxer::{ValueBox, ValueBoxPointer, ValueBoxPointerReference};
-use enums::WinitCursorIcon;
-use event_loop::WinitEventLoop;
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::window::Window;
 use winit::window::WindowBuilder;
-use winit_convert_window_id;
 
 #[no_mangle]
 pub fn winit_create_window(
@@ -46,6 +47,15 @@ pub fn winit_create_window(
 ///////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////// W I N D O W   A C C E S S O R S /////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
+
+#[no_mangle]
+pub fn winit_windowed_context_raw_window_handle(
+    _ptr_window: *mut ValueBox<Window>,
+) -> *mut ValueBox<RawWindowHandle> {
+    _ptr_window.with_not_null_return(std::ptr::null_mut(), |context| {
+        ValueBox::new(context.raw_window_handle()).into_raw()
+    })
+}
 
 #[no_mangle]
 pub fn winit_window_request_redraw(window_ptr: *mut ValueBox<Window>) {

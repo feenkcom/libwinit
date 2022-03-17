@@ -2,10 +2,10 @@ use boxer::number::BoxerUint128;
 
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::*;
-use winit_convert_window_id;
 
+use crate::event_loop::WinitCustomEvent;
+use crate::winit_convert_window_id;
 use boxer::{ValueBox, ValueBoxPointerReference};
-use event_loop::WinitCustomEvent;
 use std::collections::HashMap;
 use std::mem::transmute;
 
@@ -152,7 +152,7 @@ pub struct WinitEventModifiersState {
 #[repr(C)]
 pub struct WinitEventMouseButton {
     button_type: WinitEventMouseButtonType,
-    button_code: u8,
+    button_code: u16,
 }
 
 #[derive(Debug, Copy, Clone, Default)]

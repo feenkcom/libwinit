@@ -1,5 +1,5 @@
+use crate::events::{EventProcessor, WinitControlFlow, WinitEvent, WinitEventType};
 use boxer::{ValueBox, ValueBoxPointer, ValueBoxPointerReference};
-use events::{EventProcessor, WinitControlFlow, WinitEvent, WinitEventType};
 use std::collections::VecDeque;
 use std::ffi::c_void;
 use std::intrinsics::transmute;
@@ -8,7 +8,8 @@ use std::time;
 use winit::event_loop::EventLoopClosed;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
 use winit::monitor::MonitorHandle;
-use winit::platform::desktop::EventLoopExtDesktop;
+use winit::platform::run_return::EventLoopExtRunReturn;
+use winit::window::{Window, WindowBuilder};
 
 pub type WinitCustomEvent = u32;
 pub type WinitEventLoop = EventLoop<WinitCustomEvent>;
@@ -59,6 +60,7 @@ pub struct PollingEventLoop {
     events: Mutex<VecDeque<WinitEvent>>,
     semaphore_signaller: Option<SemaphoreSignaller>,
     main_events_cleared_signaller: Option<MainEventClearedSignaller>,
+    event_loop: *const EventLoopWindowTarget<WinitCustomEvent>,
 }
 
 impl PollingEventLoop {
@@ -67,6 +69,7 @@ impl PollingEventLoop {
             events: Mutex::new(VecDeque::new()),
             semaphore_signaller: None,
             main_events_cleared_signaller: None,
+            event_loop: std::ptr::null(),
         }
     }
 
@@ -123,17 +126,14 @@ impl PollingEventLoop {
     }
 
     pub fn signal_semaphore(&self) {
-        if self.semaphore_signaller.is_some() {
-            self.semaphore_signaller.as_ref().unwrap().signal();
+        if let Some(signaller) = self.semaphore_signaller.as_ref() {
+            signaller.signal()
         }
     }
 
     pub fn signal_main_events_cleared(&self) {
-        if self.main_events_cleared_signaller.is_some() {
-            self.main_events_cleared_signaller
-                .as_ref()
-                .unwrap()
-                .signal();
+        if let Some(signaller) = self.main_events_cleared_signaller.as_ref() {
+            signaller.signal()
         }
     }
 
@@ -141,7 +141,8 @@ impl PollingEventLoop {
         let mut event_processor = EventProcessor::new();
         let event_loop = WinitEventLoop::with_user_event();
 
-        event_loop.run(move |event, _, control_flow: &mut ControlFlow| {
+        event_loop.run(move |event, event_loop, control_flow: &mut ControlFlow| {
+            self.event_loop = event_loop as *const EventLoopWindowTarget<WinitCustomEvent>;
             *control_flow = ControlFlow::Wait;
 
             let mut c_event = WinitEvent::default();
@@ -160,6 +161,7 @@ impl PollingEventLoop {
                     self.signal_main_events_cleared();
                 }
             }
+            self.event_loop = std::ptr::null_mut();
         })
     }
 }
@@ -214,6 +216,45 @@ pub fn winit_polling_event_loop_new() -> *mut ValueBox<PollingEventLoop> {
 }
 
 #[no_mangle]
+pub fn winit_polling_event_loop_create_window(
+    _ptr_events_loop: *mut ValueBox<PollingEventLoop>,
+    mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
+) -> *mut ValueBox<Window> {
+    if _ptr_events_loop.is_null() {
+        error!("Polling event loop is null");
+        return std::ptr::null_mut();
+    }
+
+    if _ptr_window_builder.is_null() {
+        error!("Window builder is null");
+        return std::ptr::null_mut();
+    }
+
+    _ptr_events_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
+        if event_loop.event_loop.is_null() {
+            error!("Event loop is null");
+            return std::ptr::null_mut();
+        }
+        _ptr_window_builder.with_not_null_value_consumed_return(
+            std::ptr::null_mut(),
+            |window_builder| {
+                debug!("Window builder: {:?}", &window_builder);
+
+                let event_loop = unsafe { &*event_loop.event_loop };
+
+                match window_builder.build(event_loop) {
+                    Ok(window) => ValueBox::new(window).into_raw(),
+                    Err(err) => {
+                        warn!("Could not create window {:?}", err);
+                        std::ptr::null_mut()
+                    }
+                }
+            },
+        )
+    })
+}
+
+#[no_mangle]
 pub fn winit_polling_event_loop_new_with_semaphore_and_main_events_signaller(
     semaphore_callback: extern "C" fn(usize, *const c_void),
     semaphore_index: usize,
@@ -259,6 +300,13 @@ pub fn winit_polling_event_loop_drop(_ptr: &mut *mut ValueBox<PollingEventLoop>)
 
 #[no_mangle]
 pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
+    #[cfg(target_os = "linux")]
+    {
+        // respect the winit backend if it is set
+        if (std::env::var("WINIT_UNIX_BACKEND").is_err()) {
+            std::env::set_var("WINIT_UNIX_BACKEND", "x11");
+        }
+    }
     ValueBox::new(WinitEventLoop::with_user_event()).into_raw()
 }
 

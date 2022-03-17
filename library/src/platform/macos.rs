@@ -1,10 +1,10 @@
 #![cfg(target_os = "macos")]
 
 use boxer::{ValueBox, ValueBoxPointer};
-use winit::platform::macos::{WindowBuilderExtMacOS, WindowExtMacOS};
-use winit::window::{WindowBuilder, Window};
+use cocoa::base::{nil, NO, YES};
 use cocoa::{appkit::NSView, base::id as cocoa_id};
-use cocoa::base::{nil, YES, NO};
+use winit::platform::macos::{WindowBuilderExtMacOS, WindowExtMacOS};
+use winit::window::{Window, WindowBuilder};
 
 #[no_mangle]
 pub fn winit_window_builder_with_full_size(
@@ -21,9 +21,7 @@ pub fn winit_window_builder_with_full_size(
 
 #[no_mangle]
 pub fn winit_window_get_ns_view(window_ptr: *mut ValueBox<Window>) -> cocoa_id {
-    window_ptr.with_not_null_return(nil, |window| {
-        window.ns_view() as cocoa_id
-    })
+    window_ptr.with_not_null_return(nil, |window| window.ns_view() as cocoa_id)
 }
 
 #[no_mangle]

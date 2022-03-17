@@ -1,11 +1,5 @@
-#![allow(non_snake_case)]
-
-extern crate boxer;
-extern crate libc;
-extern crate winit;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
 
 #[cfg(target_os = "macos")]
 extern crate cocoa;

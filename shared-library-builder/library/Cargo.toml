@@ -1,0 +1,10 @@
+[package]
+name = "libwinit-library"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+shared-library-builder = { git = "https://github.com/feenkcom/shared-library-builder-rs", features = ["git-location"] }
