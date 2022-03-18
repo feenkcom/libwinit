@@ -1,5 +1,6 @@
 use crate::events::{EventProcessor, WinitControlFlow, WinitEvent, WinitEventType};
 use boxer::{ValueBox, ValueBoxPointer, ValueBoxPointerReference};
+use std::borrow::{Borrow, BorrowMut};
 use std::collections::VecDeque;
 use std::ffi::c_void;
 use std::intrinsics::transmute;
@@ -15,6 +16,7 @@ pub type WinitCustomEvent = u32;
 pub type WinitEventLoop = EventLoop<WinitCustomEvent>;
 pub type WinitEventLoopProxy = EventLoopProxy<WinitCustomEvent>;
 
+#[derive(Debug)]
 pub struct SemaphoreSignaller {
     semaphore_callback: unsafe extern "C" fn(usize, *const c_void),
     semaphore_index: usize,
@@ -40,6 +42,7 @@ impl SemaphoreSignaller {
     }
 }
 
+#[derive(Debug)]
 pub struct MainEventClearedSignaller {
     callback: unsafe extern "C" fn(*const c_void),
     thunk: *const c_void,
@@ -56,11 +59,13 @@ impl MainEventClearedSignaller {
     }
 }
 
+#[derive(Debug)]
 pub struct PollingEventLoop {
     events: Mutex<VecDeque<WinitEvent>>,
     semaphore_signaller: Option<SemaphoreSignaller>,
     main_events_cleared_signaller: Option<MainEventClearedSignaller>,
-    event_loop: *const EventLoopWindowTarget<WinitCustomEvent>,
+    running_event_loop: *const EventLoopWindowTarget<WinitCustomEvent>,
+    event_loop_waker: WinitEventLoopWaker,
 }
 
 impl PollingEventLoop {
@@ -69,7 +74,8 @@ impl PollingEventLoop {
             events: Mutex::new(VecDeque::new()),
             semaphore_signaller: None,
             main_events_cleared_signaller: None,
-            event_loop: std::ptr::null(),
+            running_event_loop: std::ptr::null(),
+            event_loop_waker: WinitEventLoopWaker::new(),
         }
     }
 
@@ -139,10 +145,12 @@ impl PollingEventLoop {
 
     pub fn run(&'static mut self) {
         let mut event_processor = EventProcessor::new();
+
         let event_loop = WinitEventLoop::with_user_event();
+        self.event_loop_waker.proxy(event_loop.create_proxy());
 
         event_loop.run(move |event, event_loop, control_flow: &mut ControlFlow| {
-            self.event_loop = event_loop as *const EventLoopWindowTarget<WinitCustomEvent>;
+            self.running_event_loop = event_loop as *const EventLoopWindowTarget<WinitCustomEvent>;
             *control_flow = ControlFlow::Wait;
 
             let mut c_event = WinitEvent::default();
@@ -157,35 +165,48 @@ impl PollingEventLoop {
                     self.signal_semaphore();
                 }
 
-                if event_type == WinitEventType::MainEventsCleared {
+                if event_type == WinitEventType::MainEventsCleared
+                    || event_type == WinitEventType::RedrawEventsCleared
+                {
                     self.signal_main_events_cleared();
                 }
             }
-            self.event_loop = std::ptr::null_mut();
+            self.running_event_loop = std::ptr::null_mut();
         })
-    }
-}
-
-#[repr(C)]
-pub struct WinitEventLoopWaker {
-    proxy: Arc<WinitEventLoopProxy>,
-}
-
-impl WinitEventLoopWaker {
-    pub fn new(event_loop: &WinitEventLoop) -> Self {
-        Self {
-            proxy: Arc::new(event_loop.create_proxy()),
-        }
     }
 
     pub fn wake(&self, event: WinitCustomEvent) -> Result<(), EventLoopClosed<WinitCustomEvent>> {
-        self.proxy.send_event(event)
+        self.event_loop_waker.wake(event)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct WinitEventLoopWaker {
+    proxy: Arc<Mutex<Option<WinitEventLoopProxy>>>,
+}
+
+impl WinitEventLoopWaker {
+    pub fn new() -> Self {
+        Self {
+            proxy: Arc::new(Mutex::new(None)),
+        }
+    }
+
+    pub fn proxy(&self, proxy: WinitEventLoopProxy) {
+        self.proxy.lock().unwrap().borrow_mut().replace(proxy);
+    }
+
+    pub fn wake(&self, event: WinitCustomEvent) -> Result<(), EventLoopClosed<WinitCustomEvent>> {
+        match self.proxy.lock().unwrap().borrow().as_ref() {
+            None => Ok(()),
+            Some(proxy) => proxy.send_event(event),
+        }
     }
 }
 
 extern "C" fn winit_waker_wake(waker_ptr: *const c_void, event: WinitCustomEvent) -> bool {
-    let ptr = waker_ptr as *mut ValueBox<WinitEventLoopWaker>;
-    ptr.with_not_null_return(false, |waker| match waker.wake(event) {
+    let waker_ptr = waker_ptr as *mut ValueBox<WinitEventLoopWaker>;
+    waker_ptr.with_not_null_return(false, |waker| match waker.wake(event) {
         Ok(_) => true,
         Err(_) => false,
     })
@@ -193,10 +214,10 @@ extern "C" fn winit_waker_wake(waker_ptr: *const c_void, event: WinitCustomEvent
 
 #[no_mangle]
 pub fn winit_event_loop_waker_create(
-    event_loop_ptr: *mut ValueBox<WinitEventLoop>,
+    event_loop_ptr: *mut ValueBox<PollingEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopWaker> {
     event_loop_ptr.with_not_null_return(std::ptr::null_mut(), |event_loop| {
-        ValueBox::new(WinitEventLoopWaker::new(event_loop)).into_raw()
+        ValueBox::new(event_loop.event_loop_waker.clone()).into_raw()
     })
 }
 
@@ -216,6 +237,17 @@ pub fn winit_polling_event_loop_new() -> *mut ValueBox<PollingEventLoop> {
 }
 
 #[no_mangle]
+fn winit_polling_event_loop_wake(
+    events_loop: *mut ValueBox<PollingEventLoop>,
+    event: WinitCustomEvent,
+) -> bool {
+    events_loop.with_not_null_return(false, |event_loop| match event_loop.wake(event) {
+        Ok(_) => true,
+        Err(_) => false,
+    })
+}
+
+#[no_mangle]
 pub fn winit_polling_event_loop_create_window(
     _ptr_events_loop: *mut ValueBox<PollingEventLoop>,
     mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
@@ -231,7 +263,7 @@ pub fn winit_polling_event_loop_create_window(
     }
 
     _ptr_events_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
-        if event_loop.event_loop.is_null() {
+        if event_loop.running_event_loop.is_null() {
             error!("Event loop is null");
             return std::ptr::null_mut();
         }
@@ -240,7 +272,7 @@ pub fn winit_polling_event_loop_create_window(
             |window_builder| {
                 debug!("Window builder: {:?}", &window_builder);
 
-                let event_loop = unsafe { &*event_loop.event_loop };
+                let event_loop = unsafe { &*event_loop.running_event_loop };
 
                 match window_builder.build(event_loop) {
                     Ok(window) => ValueBox::new(window).into_raw(),
