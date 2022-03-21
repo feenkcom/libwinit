@@ -6,8 +6,8 @@ use std::ffi::c_void;
 use std::intrinsics::transmute;
 use std::sync::{Arc, Mutex};
 use std::time;
-use winit::event_loop::EventLoopClosed;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
+use winit::event_loop::{EventLoopBuilder, EventLoopClosed};
 use winit::monitor::MonitorHandle;
 use winit::platform::run_return::EventLoopExtRunReturn;
 use winit::window::{Window, WindowBuilder};
@@ -146,7 +146,7 @@ impl PollingEventLoop {
     pub fn run(&'static mut self) {
         let mut event_processor = EventProcessor::new();
 
-        let event_loop = WinitEventLoop::with_user_event();
+        let event_loop = EventLoopBuilder::<WinitCustomEvent>::with_user_event().build();
         self.event_loop_waker.proxy(event_loop.create_proxy());
 
         event_loop.run(move |event, event_loop, control_flow: &mut ControlFlow| {
@@ -339,7 +339,7 @@ pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
             std::env::set_var("WINIT_UNIX_BACKEND", "x11");
         }
     }
-    ValueBox::new(WinitEventLoop::with_user_event()).into_raw()
+    ValueBox::new(EventLoopBuilder::<WinitCustomEvent>::with_user_event().build()).into_raw()
 }
 
 #[no_mangle]
