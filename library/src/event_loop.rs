@@ -178,6 +178,14 @@ impl PollingEventLoop {
     pub fn wake(&self, event: WinitCustomEvent) -> Result<(), EventLoopClosed<WinitCustomEvent>> {
         self.event_loop_waker.wake(event)
     }
+
+    pub fn event_loop(&self) -> Option<&EventLoopWindowTarget<WinitCustomEvent>> {
+        if self.running_event_loop.is_null() {
+            None
+        } else {
+            Some(unsafe { &*self.running_event_loop })
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -326,6 +334,19 @@ pub fn winit_polling_event_loop_run(_ptr_event_loop: *mut ValueBox<PollingEventL
 }
 
 #[no_mangle]
+fn winit_polling_event_loop_get_type(
+    _ptr_event_loop: *mut ValueBox<PollingEventLoop>,
+) -> WinitEventLoopType {
+    _ptr_event_loop.with_not_null_return(WinitEventLoopType::Unknown, |event_loop| {
+        event_loop
+            .event_loop()
+            .map_or(WinitEventLoopType::Unknown, |event_loop| {
+                get_event_loop_type(event_loop)
+            })
+    })
+}
+
+#[no_mangle]
 pub fn winit_polling_event_loop_drop(_ptr: &mut *mut ValueBox<PollingEventLoop>) {
     _ptr.drop();
 }
@@ -397,7 +418,9 @@ pub enum WinitEventLoopType {
 }
 
 #[cfg(target_os = "linux")]
-fn get_event_loop_type(_event_loop: &WinitEventLoop) -> WinitEventLoopType {
+fn get_event_loop_type(
+    _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+) -> WinitEventLoopType {
     use winit::platform::unix::EventLoopWindowTargetExtUnix;
     if _event_loop.is_wayland() {
         return WinitEventLoopType::Wayland;
@@ -409,17 +432,23 @@ fn get_event_loop_type(_event_loop: &WinitEventLoop) -> WinitEventLoopType {
 }
 
 #[cfg(target_os = "windows")]
-fn get_event_loop_type(_event_loop: &WinitEventLoop) -> WinitEventLoopType {
+fn get_event_loop_type(
+    _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+) -> WinitEventLoopType {
     WinitEventLoopType::Windows
 }
 
 #[cfg(target_os = "macos")]
-fn get_event_loop_type(_event_loop: &WinitEventLoop) -> WinitEventLoopType {
+fn get_event_loop_type(
+    _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+) -> WinitEventLoopType {
     WinitEventLoopType::MacOS
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-fn get_event_loop_type(_event_loop: &WinitEventLoop) -> WinitEventLoopType {
+fn get_event_loop_type(
+    _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+) -> WinitEventLoopType {
     WinitEventLoopType::Unknown
 }
 
