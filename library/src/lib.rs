@@ -14,9 +14,20 @@ pub mod window_builder;
 #[path = "platform/macos.rs"]
 mod ext;
 
+mod error;
 #[cfg(all(not(target_os = "macos")))]
 #[path = "platform/others.rs"]
 mod ext;
+mod ffi;
+mod polling_event_loop;
+mod window_ref;
+
+pub use ffi::*;
+
+pub use error::{Result, WinitError};
+
+pub use polling_event_loop::*;
+pub use window_ref::WindowRef;
 
 use boxer::number::BoxerUint128;
 use boxer::string::BoxerString;

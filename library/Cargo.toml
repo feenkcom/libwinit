@@ -1,15 +1,16 @@
 [package]
 name = "libwinit"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Aliaksei Syrel <alex.syrel@gmail.com>"]
 edition = "2021"
 
 [dependencies]
 winit = { git = "https://github.com/syrel/winit", rev = "3e8db78c10423528a8cf19d674c4494bfe34f74d" }
 raw-window-handle = "0.4"
-boxer = { git = "https://github.com/feenkcom/gtoolkit-boxer", rev = "8ffd345b6aabda55c5ab1b4914f6f3e5f92918d4" }
+boxer = { git = "https://github.com/feenkcom/gtoolkit-boxer", rev = "4cc03d989c46aeb78d1a4f142360239cf8df7de3" }
 log = "0.4"
 env_logger = "0.8"
+thiserror = "1.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.24.0"
