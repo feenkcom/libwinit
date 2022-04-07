@@ -1,6 +1,5 @@
 use crate::enums::WinitCursorIcon;
 use crate::{winit_convert_window_id, PollingEventLoop, WindowRef};
-use std::ffi::c_void;
 
 use boxer::number::BoxerUint128;
 use boxer::point::BoxerPointI32;
@@ -252,7 +251,7 @@ pub fn winit_window_ref_get_ns_view(
 pub fn winit_window_ref_get_hwnd(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
-) -> *mut c_void {
+) -> *mut std::ffi::c_void {
     with_window(event_loop, window_ref, |window| Ok(window.hwnd())).or_log(std::ptr::null_mut())
 }
 
