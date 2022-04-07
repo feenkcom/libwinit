@@ -11,6 +11,14 @@ use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::window::Window;
 use winit::window::WindowBuilder;
 
+#[cfg(target_os = "macos")]
+use winit::platform::macos::WindowExtMacOS;
+#[cfg(target_os = "macos")]
+use winit::platform::macos::WindowBuilderExtMacOS;
+
+#[cfg(target_os = "windows")]
+use winit::platform::windows::WindowExtWindows;
+
 #[no_mangle]
 pub fn winit_create_window(
     event_loop_ptr: *mut ValueBox<WinitEventLoop>,
@@ -147,6 +155,40 @@ pub fn winit_window_set_maximized(window_ptr: *mut ValueBox<Window>, maximized: 
     window_ptr.with_not_null(|window| {
         window.set_maximized(maximized);
     });
+}
+
+#[cfg(target_os = "windows")]
+#[no_mangle]
+pub fn winit_window_get_hwnd(window_ptr: *mut ValueBox<Window>) -> *mut std::ffi::c_void {
+    window_ptr.with_not_null_return(std::ptr::null_mut(), |window| window.hwnd())
+}
+
+#[cfg(not(target_os = "macos"))]
+#[no_mangle]
+pub fn winit_window_builder_with_full_size(
+    _ptr_window_builder: *mut ValueBox<WindowBuilder>,
+    _with_full_size: bool,
+) {
+}
+
+#[cfg(target_os = "macos")]
+#[no_mangle]
+pub fn winit_window_builder_with_full_size(
+    mut window_builder_ptr: *mut ValueBox<WindowBuilder>,
+    with_full_size: bool,
+) {
+    window_builder_ptr.with_not_null_value_mutate(|builder| {
+        builder
+            .with_titlebar_transparent(with_full_size)
+            .with_fullsize_content_view(with_full_size)
+            .with_title_hidden(with_full_size)
+    })
+}
+
+#[cfg(target_os = "macos")]
+#[no_mangle]
+pub fn winit_window_get_ns_view(window_ptr: *mut ValueBox<Window>) -> cocoa::base::id {
+    window_ptr.with_not_null_return(nil, |window| window.ns_view() as cocoa::base::id)
 }
 
 #[no_mangle]

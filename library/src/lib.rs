@@ -1,23 +1,13 @@
 #[macro_use]
 extern crate log;
 
-#[cfg(target_os = "macos")]
-extern crate cocoa;
-
 pub mod enums;
 pub mod event_loop;
 pub mod events;
 pub mod window;
 pub mod window_builder;
 
-#[cfg(target_os = "macos")]
-#[path = "platform/macos.rs"]
-mod ext;
-
 mod error;
-#[cfg(all(not(target_os = "macos")))]
-#[path = "platform/others.rs"]
-mod ext;
 mod ffi;
 mod polling_event_loop;
 mod window_ref;

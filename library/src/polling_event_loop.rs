@@ -347,7 +347,7 @@ impl PollingEventLoop {
             *control_flow = ControlFlow::Wait;
 
             let result = match &event {
-                Event::UserEvent(value) => { Ok(trace!("Received UserEvent({})", value)) }
+                Event::UserEvent(value) => Ok(trace!("Received UserEvent({})", value)),
                 Event::RedrawRequested(window_id) => self.on_redraw_requested(window_id),
                 Event::WindowEvent { window_id, event } => match event {
                     WindowEvent::Resized(size) => self.on_window_resized(window_id, size),
