@@ -98,12 +98,10 @@ pub fn winit_polling_event_loop_add_resize_listener(
         .to_ref()
         .and_then(|mut event_loop| {
             window_id.to_ref().and_then(|window_id| {
-                event_loop
-                    .add_resize_listener(
-                        window_id.deref(),
-                        WindowResizedListener::new(callback, thunk),
-                    )
-                    .map_err(|err| err.into())
+                Ok(event_loop.add_resize_listener(
+                    window_id.deref(),
+                    WindowResizedListener::new(callback, thunk),
+                ))
             })
         })
         .log();
@@ -120,12 +118,10 @@ pub fn winit_polling_event_loop_add_redraw_listener(
         .to_ref()
         .and_then(|mut event_loop| {
             window_id.to_ref().and_then(|window_id| {
-                event_loop
-                    .add_redraw_listener(
-                        window_id.deref(),
-                        WindowRedrawRequestedListener::new(callback, thunk),
-                    )
-                    .map_err(|err| err.into())
+                Ok(event_loop.add_redraw_listener(
+                    window_id.deref(),
+                    WindowRedrawRequestedListener::new(callback, thunk),
+                ))
             })
         })
         .log();

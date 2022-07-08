@@ -12,9 +12,9 @@ use winit::window::Window;
 use winit::window::WindowBuilder;
 
 #[cfg(target_os = "macos")]
-use winit::platform::macos::WindowExtMacOS;
-#[cfg(target_os = "macos")]
 use winit::platform::macos::WindowBuilderExtMacOS;
+#[cfg(target_os = "macos")]
+use winit::platform::macos::WindowExtMacOS;
 
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
@@ -188,7 +188,9 @@ pub fn winit_window_builder_with_full_size(
 #[cfg(target_os = "macos")]
 #[no_mangle]
 pub fn winit_window_get_ns_view(window_ptr: *mut ValueBox<Window>) -> cocoa::base::id {
-    window_ptr.with_not_null_return(cocoa::base::nil, |window| window.ns_view() as cocoa::base::id)
+    window_ptr.with_not_null_return(cocoa::base::nil, |window| {
+        window.ns_view() as cocoa::base::id
+    })
 }
 
 #[no_mangle]

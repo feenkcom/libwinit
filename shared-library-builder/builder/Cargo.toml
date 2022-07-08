@@ -9,3 +9,4 @@ path = "src/main.rs"
 
 [dependencies]
 shared-library-builder = { git = "https://github.com/feenkcom/shared-library-builder-rs" }
+libwinit-library = { path = "../library" }

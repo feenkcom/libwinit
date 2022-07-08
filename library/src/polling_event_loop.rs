@@ -1,9 +1,10 @@
 use crate::events::{EventProcessor, WinitEvent, WinitEventType};
 use boxer::{BoxerError, ReturnBoxerResult};
+use parking_lot::Mutex;
 use std::borrow::{Borrow, BorrowMut};
 use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
@@ -76,6 +77,12 @@ impl WindowRedrawRequestedListener {
     }
 }
 
+impl Drop for WindowRedrawRequestedListener {
+    fn drop(&mut self) {
+
+    }
+}
+
 #[derive(Debug)]
 pub struct WindowResizedListener {
     thunk: *const c_void,
@@ -127,30 +134,40 @@ impl PollingEventLoop {
         &mut self,
         window_id: &WindowId,
         listener: WindowRedrawRequestedListener,
-    ) -> Result<()> {
+    ) {
         self.window_redraw_listeners
             .lock()
-            .map_err(|error| WinitError::from(error))
-            .map(|mut map| {
-                map.entry(window_id.clone())
-                    .or_insert_with(|| None)
-                    .replace(listener);
-            })
+            .entry(window_id.clone())
+            .or_insert_with(|| None)
+            .replace(listener);
     }
 
-    pub fn add_resize_listener(
+    pub fn remove_redraw_listener(
         &mut self,
         window_id: &WindowId,
-        listener: WindowResizedListener,
-    ) -> Result<()> {
+    ) -> Option<WindowRedrawRequestedListener> {
+        self.window_redraw_listeners
+            .lock()
+            .remove(window_id)
+            .unwrap_or(None)
+    }
+
+    pub fn add_resize_listener(&mut self, window_id: &WindowId, listener: WindowResizedListener) {
         self.window_resize_listeners
             .lock()
-            .map_err(|error| WinitError::from(error))
-            .map(|mut map| {
-                map.entry(window_id.clone())
-                    .or_insert_with(|| None)
-                    .replace(listener);
-            })
+            .entry(window_id.clone())
+            .or_insert_with(|| None)
+            .replace(listener);
+    }
+
+    pub fn remove_resize_listener(
+        &mut self,
+        window_id: &WindowId,
+    ) -> Option<WindowResizedListener> {
+        self.window_resize_listeners
+            .lock()
+            .remove(window_id)
+            .unwrap_or(None)
     }
 
     pub fn with_semaphore_signaller(
@@ -177,16 +194,7 @@ impl PollingEventLoop {
     }
 
     pub fn poll(&mut self) -> Option<WinitEvent> {
-        match self.events.lock() {
-            Ok(mut guard) => guard.pop_front(),
-            Err(err) => {
-                println!(
-                    "[PollingEventLoop::poll] Error locking the guard: {:?}",
-                    err
-                );
-                None
-            }
-        }
+        self.events.lock().pop_front()
     }
 
     pub fn push(&mut self, event: WinitEvent) {
@@ -194,15 +202,7 @@ impl PollingEventLoop {
     }
 
     pub fn push_event(events: &mut Mutex<VecDeque<WinitEvent>>, event: WinitEvent) {
-        match events.lock() {
-            Ok(mut guard) => {
-                guard.push_back(event);
-            }
-            Err(err) => eprintln!(
-                "[PollingEventLoop::push] Error locking the guard: {:?}",
-                err
-            ),
-        }
+        events.lock().push_back(event);
     }
 
     pub fn signal_semaphore(&self) {
@@ -220,7 +220,7 @@ impl PollingEventLoop {
     /// Is called when a window requested to be redrawn
     fn on_redraw_requested(&self, window_id: &WindowId) -> Result<()> {
         trace!("Received RedrawRequested({:?})", window_id);
-        if let Some(listeners) = self.window_redraw_listeners.lock().unwrap().get(window_id) {
+        if let Some(listeners) = self.window_redraw_listeners.lock().get(window_id) {
             for listener in listeners {
                 listener.on_redraw_requested();
             }
@@ -234,7 +234,7 @@ impl PollingEventLoop {
             window_ref.set_inner_size(size.clone())
         })?;
 
-        if let Some(listeners) = self.window_resize_listeners.lock().unwrap().get(window_id) {
+        if let Some(listeners) = self.window_resize_listeners.lock().get(window_id) {
             for listener in listeners {
                 listener.on_window_resized(size);
             }
@@ -256,7 +256,7 @@ impl PollingEventLoop {
             window_ref.set_scale_factor(scale_factor.clone())
         })?;
 
-        if let Some(listeners) = self.window_resize_listeners.lock().unwrap().get(window_id) {
+        if let Some(listeners) = self.window_resize_listeners.lock().get(window_id) {
             for listener in listeners {
                 listener.on_window_resized(&new_inner_size);
             }
@@ -272,21 +272,19 @@ impl PollingEventLoop {
             .ok_or(WinitError::EventLoopNotRunning)
             .and_then(|event_loop| window_builder.build(event_loop).map_err(|err| err.into()))
             .and_then(|window| {
+                let window_id = window.id();
+                let window_ref = WindowRef::new(&window_id);
+                window_ref.set_scale_factor(window.scale_factor())?;
+                window_ref.set_inner_size(window.inner_size())?;
+                if let Ok(position) = window.outer_position() {
+                    window_ref.set_outer_position(position)?;
+                }
+
                 self.windows
                     .lock()
-                    .map_err(|error| error.into())
-                    .and_then(|mut lock| {
-                        let window_id = window.id();
-                        let window_ref = WindowRef::new(&window_id);
-                        window_ref.set_scale_factor(window.scale_factor())?;
-                        window_ref.set_inner_size(window.inner_size())?;
-                        if let Ok(position) = window.outer_position() {
-                            window_ref.set_outer_position(position)?;
-                        }
+                    .insert(window_id, (window_ref.clone(), window));
 
-                        lock.insert(window_id, (window_ref.clone(), window));
-                        Ok(window_ref)
-                    })
+                Ok(window_ref)
             })
     }
 
@@ -297,12 +295,9 @@ impl PollingEventLoop {
     ) -> Result<T> {
         self.windows
             .lock()
-            .map_err(|error| error.into())
-            .and_then(|lock| {
-                lock.get(window_id)
-                    .ok_or_else(|| WinitError::WindowNotFound(window_id.clone()))
-                    .and_then(|(_window_ref, window)| callback(window))
-            })
+            .get(window_id)
+            .ok_or_else(|| WinitError::WindowNotFound(window_id.clone()))
+            .and_then(|(_window_ref, window)| callback(window))
     }
 
     pub fn with_window_mut<T>(
@@ -312,29 +307,21 @@ impl PollingEventLoop {
     ) -> Result<T> {
         self.windows
             .lock()
-            .map_err(|error| error.into())
-            .and_then(|mut lock| {
-                lock.get_mut(window_id)
-                    .ok_or_else(|| WinitError::WindowNotFound(window_id.clone()))
-                    .and_then(|(window_ref, window)| callback(window, window_ref))
-            })
+            .get_mut(window_id)
+            .ok_or_else(|| WinitError::WindowNotFound(window_id.clone()))
+            .and_then(|(window_ref, window)| callback(window, window_ref))
     }
 
     /// Destroy a window by its id
     pub fn destroy_window(&mut self, window_id: &WindowId) -> Result<()> {
-        self.windows
-            .lock()
-            .map_err(|error| error.into())
-            .and_then(|mut lock| {
-                if let Some(window) = lock.remove(window_id) {
-                    drop(window);
-                    info!("Closed window with id {:?}", window_id);
-                    Ok(())
-                } else {
-                    warn!("Could not find window to close with id {:?}", window_id);
-                    Err(WinitError::WindowNotFound(window_id.clone()))
-                }
-            })
+        if let Some(window) = self.windows.lock().remove(window_id) {
+            drop(window);
+            info!("Closed window with id {:?}", window_id);
+            Ok(())
+        } else {
+            warn!("Could not find window to close with id {:?}", window_id);
+            Err(WinitError::WindowNotFound(window_id.clone()))
+        }
     }
 
     pub fn run(&'static mut self) {
@@ -348,6 +335,15 @@ impl PollingEventLoop {
 
             let result = match &event {
                 Event::UserEvent(value) => Ok(trace!("Received UserEvent({})", value)),
+                Event::MainEventsCleared => {
+                    self.windows
+                        .lock()
+                        .iter()
+                        .for_each(|(_key, value)| {
+                            value.1.request_redraw();
+                        });
+                    Ok(())
+                }
                 Event::RedrawRequested(window_id) => self.on_redraw_requested(window_id),
                 Event::WindowEvent { window_id, event } => match event {
                     WindowEvent::Resized(size) => self.on_window_resized(window_id, size),
@@ -412,11 +408,11 @@ impl WinitEventLoopWaker {
     }
 
     pub fn proxy(&self, proxy: WinitEventLoopProxy) {
-        self.proxy.lock().unwrap().borrow_mut().replace(proxy);
+        self.proxy.lock().borrow_mut().replace(proxy);
     }
 
     pub fn wake(&self, event: WinitCustomEvent) -> Result<()> {
-        match self.proxy.lock().unwrap().borrow().as_ref() {
+        match self.proxy.lock().borrow().as_ref() {
             None => Ok(()),
             Some(proxy) => proxy.send_event(event).map_err(|err| err.into()),
         }
