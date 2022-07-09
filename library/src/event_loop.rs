@@ -1,12 +1,17 @@
-use crate::events::{EventProcessor, WinitControlFlow, WinitEvent};
-use boxer::{ValueBox, ValueBoxPointer, ValueBoxPointerReference};
 use std::time;
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
+
+use boxer::{ValueBox, ValueBoxPointer, ValueBoxPointerReference};
+use winit::event_loop::{
+    ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget,
+};
 use winit::monitor::MonitorHandle;
 use winit::platform::run_return::EventLoopExtRunReturn;
 
+use crate::events::{EventProcessor, WinitControlFlow, WinitEvent};
+
 pub type WinitCustomEvent = u32;
 pub type WinitEventLoop = EventLoop<WinitCustomEvent>;
+pub type WinitEventLoopBuilder = EventLoopBuilder<WinitCustomEvent>;
 pub type WinitEventLoopProxy = EventLoopProxy<WinitCustomEvent>;
 
 #[no_mangle]
@@ -18,7 +23,7 @@ pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
             std::env::set_var("WINIT_UNIX_BACKEND", "x11");
         }
     }
-    ValueBox::new(WinitEventLoop::with_user_event()).into_raw()
+    ValueBox::new(WinitEventLoopBuilder::with_user_event().build()).into_raw()
 }
 
 #[no_mangle]

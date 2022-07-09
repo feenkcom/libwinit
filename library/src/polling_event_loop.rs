@@ -1,16 +1,18 @@
-use crate::events::{EventProcessor, WinitEvent, WinitEventType};
-use boxer::{BoxerError, ReturnBoxerResult};
-use parking_lot::Mutex;
 use std::borrow::{Borrow, BorrowMut};
 use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
 use std::sync::Arc;
+
+use boxer::{BoxerError, ReturnBoxerResult};
+use parking_lot::Mutex;
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
 use winit::window::{Window, WindowBuilder, WindowId};
 
 use crate::{Result, WindowRef, WinitError};
+use crate::event_loop::WinitEventLoopBuilder;
+use crate::events::{EventProcessor, WinitEvent, WinitEventType};
 
 pub type WinitCustomEvent = u32;
 pub type WinitEventLoop = EventLoop<WinitCustomEvent>;
@@ -78,9 +80,7 @@ impl WindowRedrawRequestedListener {
 }
 
 impl Drop for WindowRedrawRequestedListener {
-    fn drop(&mut self) {
-
-    }
+    fn drop(&mut self) {}
 }
 
 #[derive(Debug)]
@@ -326,7 +326,7 @@ impl PollingEventLoop {
 
     pub fn run(&'static mut self) {
         let mut event_processor = EventProcessor::new();
-        let event_loop = WinitEventLoop::with_user_event();
+        let event_loop = WinitEventLoopBuilder::with_user_event().build();
         self.event_loop_waker.proxy(event_loop.create_proxy());
 
         event_loop.run(move |event, event_loop, control_flow: &mut ControlFlow| {
@@ -336,12 +336,9 @@ impl PollingEventLoop {
             let result = match &event {
                 Event::UserEvent(value) => Ok(trace!("Received UserEvent({})", value)),
                 Event::MainEventsCleared => {
-                    self.windows
-                        .lock()
-                        .iter()
-                        .for_each(|(_key, value)| {
-                            value.1.request_redraw();
-                        });
+                    self.windows.lock().iter().for_each(|(_key, value)| {
+                        value.1.request_redraw();
+                    });
                     Ok(())
                 }
                 Event::RedrawRequested(window_id) => self.on_redraw_requested(window_id),

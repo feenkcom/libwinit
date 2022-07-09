@@ -1,13 +1,9 @@
 use shared_library_builder::{GitLocation, LibraryLocation, RustLibrary};
 
 pub fn libwinit(version: Option<impl Into<String>>) -> RustLibrary {
-    let mut location = GitLocation::github("feenkcom", "libwinit");
-    if let Some(version) = version {
-        location = location.tag(version);
-    }
     RustLibrary::new(
         "Winit",
-        LibraryLocation::Git(location),
+        LibraryLocation::Git(GitLocation::github("feenkcom", "libwinit").tag_or_latest(version)),
     )
     .package("libwinit")
 }
