@@ -10,9 +10,9 @@ use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
 use winit::window::{Window, WindowBuilder, WindowId};
 
-use crate::{Result, WindowRef, WinitError};
 use crate::event_loop::WinitEventLoopBuilder;
 use crate::events::{EventProcessor, WinitEvent, WinitEventType};
+use crate::{Result, WindowRef, WinitError};
 
 pub type WinitCustomEvent = u32;
 pub type WinitEventLoop = EventLoop<WinitCustomEvent>;

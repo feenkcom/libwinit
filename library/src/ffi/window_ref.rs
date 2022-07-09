@@ -1,5 +1,4 @@
-use crate::enums::WinitCursorIcon;
-use crate::{winit_convert_window_id, PollingEventLoop, WindowRef};
+use std::ops::DerefMut;
 
 use boxer::number::BoxerUint128;
 use boxer::point::BoxerPointI32;
@@ -8,15 +7,15 @@ use boxer::string::BoxerString;
 use boxer::{Result, ValueBoxPointerReference};
 use boxer::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-use std::ops::DerefMut;
 use winit::dpi::{PhysicalPosition, PhysicalSize};
-use winit::window::{Window, WindowId};
-
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowExtMacOS;
-
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
+use winit::window::{Window, WindowId};
+
+use crate::enums::WinitCursorIcon;
+use crate::{winit_convert_window_id, PollingEventLoop, WindowRef};
 
 fn with_window<T>(
     event_loop: *mut ValueBox<PollingEventLoop>,
@@ -252,7 +251,10 @@ pub fn winit_window_ref_get_hwnd(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut std::ffi::c_void {
-    with_window(event_loop, window_ref, |window| Ok(window.hwnd())).or_log(std::ptr::null_mut())
+    with_window(event_loop, window_ref, |window| {
+        Ok(unsafe { std::mem::transmute(window.hwnd()) })
+    })
+    .or_log(std::ptr::null_mut())
 }
 
 #[no_mangle]

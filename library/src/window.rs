@@ -160,7 +160,9 @@ pub fn winit_window_set_maximized(window_ptr: *mut ValueBox<Window>, maximized: 
 #[cfg(target_os = "windows")]
 #[no_mangle]
 pub fn winit_window_get_hwnd(window_ptr: *mut ValueBox<Window>) -> *mut std::ffi::c_void {
-    window_ptr.with_not_null_return(std::ptr::null_mut(), |window| window.hwnd())
+    window_ptr.with_not_null_return(std::ptr::null_mut(), |window| unsafe {
+        std::mem::transmute(window.hwnd())
+    })
 }
 
 #[cfg(not(target_os = "macos"))]
