@@ -5,7 +5,7 @@ authors = ["Aliaksei Syrel <alex.syrel@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-winit = { git = "https://github.com/syrel/winit", rev = "57f22dd7581fcc8b50be37a2eef194a126740b16" }
+winit = { git = "https://github.com/syrel/winit", rev = "cb781eb33456c5e3fc69f9b00aeb5a053dfcd623" }
 raw-window-handle = "0.4"
 boxer = { git = "https://github.com/feenkcom/gtoolkit-boxer", rev = "4cc03d989c46aeb78d1a4f142360239cf8df7de3" }
 log = "0.4"
