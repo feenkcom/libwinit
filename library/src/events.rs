@@ -392,7 +392,7 @@ impl EventProcessor {
                         c_event.modifiers.logo = modifiers.logo();
                         c_event.modifiers.shift = modifiers.shift();
                     }
-                    _ => ({ result = false }),
+                    _ => { result = false },
                 }
             }
 

@@ -19,7 +19,7 @@ pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
     #[cfg(target_os = "linux")]
     {
         // respect the winit backend if it is set
-        if (std::env::var("WINIT_UNIX_BACKEND").is_err()) {
+        if std::env::var("WINIT_UNIX_BACKEND").is_err() {
             std::env::set_var("WINIT_UNIX_BACKEND", "x11");
         }
     }
@@ -84,7 +84,9 @@ pub enum WinitEventLoopType {
 pub fn get_event_loop_type(
     _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
 ) -> WinitEventLoopType {
-    use winit::platform::unix::EventLoopWindowTargetExtUnix;
+    use winit::platform::x11::EventLoopWindowTargetExtX11;
+    use winit::platform::wayland::EventLoopWindowTargetExtWayland;
+
     if _event_loop.is_wayland() {
         return WinitEventLoopType::Wayland;
     }
