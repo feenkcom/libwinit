@@ -492,12 +492,12 @@ fn winit_event_loop_process_mouse_wheel(
     match delta {
         MouseScrollDelta::LineDelta(x, y) => {
             c_event.mouse_wheel.delta.delta_type = WinitEventMouseScrollDeltaType::LineDelta;
-            c_event.mouse_wheel.delta.x = x as f64;
+            c_event.mouse_wheel.delta.x = -x as f64;
             c_event.mouse_wheel.delta.y = y as f64;
         }
         MouseScrollDelta::PixelDelta(PhysicalPosition { x, y }) => {
             c_event.mouse_wheel.delta.delta_type = WinitEventMouseScrollDeltaType::PixelDelta;
-            c_event.mouse_wheel.delta.x = x;
+            c_event.mouse_wheel.delta.x = -x;
             c_event.mouse_wheel.delta.y = y;
         }
     }
