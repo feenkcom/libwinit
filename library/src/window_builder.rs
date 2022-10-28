@@ -1,5 +1,5 @@
-use boxer::string::BoxerString;
-use boxer::{ValueBox, ValueBoxPointer, ValueBoxPointerReference};
+use string_box::StringBox;
+use value_box::{ValueBox, ValueBoxPointer};
 use winit::dpi::LogicalSize;
 use winit::window::WindowBuilder;
 
@@ -9,14 +9,14 @@ pub fn winit_window_builder_new() -> *mut ValueBox<WindowBuilder> {
 }
 
 #[no_mangle]
-pub fn winit_window_builder_drop(ptr: &mut *mut ValueBox<WindowBuilder>) {
-    ptr.drop();
+pub fn winit_window_builder_drop(window_builder: *mut ValueBox<WindowBuilder>) {
+    window_builder.release();
 }
 
 #[no_mangle]
 pub fn winit_window_builder_with_title(
     mut window_builder_ptr: *mut ValueBox<WindowBuilder>,
-    _ptr_boxer_string: *mut ValueBox<BoxerString>,
+    _ptr_boxer_string: *mut ValueBox<StringBox>,
 ) {
     _ptr_boxer_string.with_not_null(|title| {
         window_builder_ptr

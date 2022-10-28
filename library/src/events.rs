@@ -1,18 +1,17 @@
-use boxer::number::BoxerUint128;
+use std::collections::HashMap;
+use std::mem::transmute;
 
+use geometry_box::U128Box;
+use value_box::{ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::*;
 
-use crate::event_loop::WinitCustomEvent;
-use crate::winit_convert_window_id;
-use boxer::{ValueBox, ValueBoxPointerReference};
-use std::collections::HashMap;
-use std::mem::transmute;
+use crate::{winit_convert_window_id, WinitUserEvent};
 
 #[derive(Debug, Default)]
 #[repr(C)]
 pub struct WinitEvent {
-    pub window_id: BoxerUint128,
+    pub window_id: U128Box,
     pub event_type: WinitEventType,
     pub touch: WinitTouchEvent,
     pub mouse_wheel: WinitMouseWheelEvent,
@@ -158,7 +157,7 @@ pub struct WinitEventMouseButton {
 #[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct WinitEventUserEvent {
-    event: WinitCustomEvent,
+    event: WinitUserEvent,
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -296,15 +295,15 @@ impl EventProcessor {
 
     pub fn process(
         &mut self,
-        global_event: winit::event::Event<WinitCustomEvent>,
+        global_event: Event<WinitUserEvent>,
         c_event: &mut WinitEvent,
     ) -> bool {
         c_event.event_type = WinitEventType::Unknown;
         let mut result = true;
 
         match global_event {
-            winit::event::Event::WindowEvent { event, window_id } => {
-                let id: BoxerUint128 = winit_convert_window_id(window_id);
+            Event::WindowEvent { event, window_id } => {
+                let id: U128Box = winit_convert_window_id(window_id);
                 c_event.window_id.clone_from(&id);
 
                 match event {
@@ -392,34 +391,34 @@ impl EventProcessor {
                         c_event.modifiers.logo = modifiers.logo();
                         c_event.modifiers.shift = modifiers.shift();
                     }
-                    _ => { result = false },
+                    _ => result = false,
                 }
             }
 
-            winit::event::Event::NewEvents(_start_cause) => {
+            Event::NewEvents(_start_cause) => {
                 c_event.event_type = WinitEventType::NewEvents;
             }
-            winit::event::Event::MainEventsCleared => {
+            Event::MainEventsCleared => {
                 c_event.event_type = WinitEventType::MainEventsCleared;
             }
-            winit::event::Event::RedrawEventsCleared => {
+            Event::RedrawEventsCleared => {
                 c_event.event_type = WinitEventType::RedrawEventsCleared;
             }
-            winit::event::Event::LoopDestroyed => {
+            Event::LoopDestroyed => {
                 c_event.event_type = WinitEventType::LoopDestroyed;
             }
-            winit::event::Event::RedrawRequested(window_id) => {
+            Event::RedrawRequested(window_id) => {
                 c_event.event_type = WinitEventType::RedrawRequested;
-                let id: BoxerUint128 = winit_convert_window_id(window_id);
+                let id: U128Box = winit_convert_window_id(window_id);
                 c_event.window_id.clone_from(&id);
             }
-            winit::event::Event::Suspended => {
+            Event::Suspended => {
                 c_event.event_type = WinitEventType::Suspended;
             }
-            winit::event::Event::Resumed => {
+            Event::Resumed => {
                 c_event.event_type = WinitEventType::Resumed;
             }
-            winit::event::Event::UserEvent(custom_event) => {
+            Event::UserEvent(custom_event) => {
                 c_event.event_type = WinitEventType::UserEvent;
                 c_event.user_event.event = custom_event;
             }
@@ -632,6 +631,6 @@ fn winit_event_loop_process_received_character(c_event: &mut WinitEvent, charact
 }
 
 #[no_mangle]
-pub fn winit_event_drop(ptr: &mut *mut ValueBox<WinitEvent>) {
-    ptr.drop();
+pub fn winit_event_drop(ptr: *mut ValueBox<WinitEvent>) {
+    ptr.release();
 }

@@ -3,20 +3,19 @@ use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
 use std::sync::Arc;
 
-use boxer::{BoxerError, ReturnBoxerResult};
 use parking_lot::Mutex;
+use value_box::{BoxerError, ReturnBoxerResult};
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
 use winit::window::{Window, WindowBuilder, WindowId};
 
+use crate::{Result, WindowRef, WinitError, WinitUserEvent};
 use crate::event_loop::WinitEventLoopBuilder;
 use crate::events::{EventProcessor, WinitEvent, WinitEventType};
-use crate::{Result, WindowRef, WinitError};
 
-pub type WinitCustomEvent = u32;
-pub type WinitEventLoop = EventLoop<WinitCustomEvent>;
-pub type WinitEventLoopProxy = EventLoopProxy<WinitCustomEvent>;
+pub type WinitEventLoop = EventLoop<WinitUserEvent>;
+pub type WinitEventLoopProxy = EventLoopProxy<WinitUserEvent>;
 
 #[derive(Debug)]
 pub struct SemaphoreSignaller {
@@ -113,7 +112,7 @@ pub struct PollingEventLoop {
     main_events_cleared_signaller: Option<MainEventClearedSignaller>,
     window_redraw_listeners: Mutex<HashMap<WindowId, Option<WindowRedrawRequestedListener>>>,
     window_resize_listeners: Mutex<HashMap<WindowId, Option<WindowResizedListener>>>,
-    pub(crate) running_event_loop: *const EventLoopWindowTarget<WinitCustomEvent>,
+    pub(crate) running_event_loop: *const EventLoopWindowTarget<WinitUserEvent>,
 }
 
 impl PollingEventLoop {
@@ -330,17 +329,11 @@ impl PollingEventLoop {
         self.event_loop_waker.proxy(event_loop.create_proxy());
 
         event_loop.run(move |event, event_loop, control_flow: &mut ControlFlow| {
-            self.running_event_loop = event_loop as *const EventLoopWindowTarget<WinitCustomEvent>;
+            self.running_event_loop = event_loop as *const EventLoopWindowTarget<WinitUserEvent>;
             *control_flow = ControlFlow::Wait;
 
             let result = match &event {
-                Event::UserEvent(value) => Ok(trace!("Received UserEvent({})", value)),
-                Event::MainEventsCleared => {
-                    self.windows.lock().iter().for_each(|(_key, value)| {
-                        value.1.request_redraw();
-                    });
-                    Ok(())
-                }
+                Event::UserEvent(value) => Ok(trace!("Received UserEvent({:?})", value)),
                 Event::RedrawRequested(window_id) => self.on_redraw_requested(window_id),
                 Event::WindowEvent { window_id, event } => match event {
                     WindowEvent::Resized(size) => self.on_window_resized(window_id, size),
@@ -379,11 +372,11 @@ impl PollingEventLoop {
         })
     }
 
-    pub fn wake(&self, event: WinitCustomEvent) -> Result<()> {
+    pub fn wake(&self, event: WinitUserEvent) -> Result<()> {
         self.event_loop_waker.wake(event)
     }
 
-    pub fn event_loop(&self) -> Option<&EventLoopWindowTarget<WinitCustomEvent>> {
+    pub fn event_loop(&self) -> Option<&EventLoopWindowTarget<WinitUserEvent>> {
         if self.running_event_loop.is_null() {
             None
         } else {
@@ -408,7 +401,7 @@ impl WinitEventLoopWaker {
         self.proxy.lock().borrow_mut().replace(proxy);
     }
 
-    pub fn wake(&self, event: WinitCustomEvent) -> Result<()> {
+    pub fn wake(&self, event: WinitUserEvent) -> Result<()> {
         match self.proxy.lock().borrow().as_ref() {
             None => Ok(()),
             Some(proxy) => proxy.send_event(event).map_err(|err| err.into()),

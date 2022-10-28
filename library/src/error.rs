@@ -1,8 +1,8 @@
-use crate::WinitCustomEvent;
-use boxer::BoxerError;
+use crate::WinitUserEvent;
 use std::error::Error;
 use std::sync::PoisonError;
 use thiserror::Error;
+use value_box::BoxerError;
 use winit::event_loop::EventLoopClosed;
 use winit::window::WindowId;
 
@@ -17,7 +17,7 @@ pub enum WinitError {
     #[error("Window with id {0:?} not found")]
     WindowNotFound(WindowId),
     #[error("Event loop closed")]
-    EventLoopClosed(#[from] EventLoopClosed<WinitCustomEvent>),
+    EventLoopClosed(#[from] EventLoopClosed<WinitUserEvent>),
     #[error("Boxer error")]
     BoxerError(#[from] BoxerError),
 }

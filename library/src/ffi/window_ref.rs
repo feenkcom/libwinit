@@ -1,12 +1,9 @@
 use std::ops::DerefMut;
 
-use boxer::number::BoxerUint128;
-use boxer::point::BoxerPointI32;
-use boxer::size::BoxerSizeU32;
-use boxer::string::BoxerString;
-use boxer::{Result, ValueBoxPointerReference};
-use boxer::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
+use geometry_box::{PointBox, SizeBox, U128Box};
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use string_box::StringBox;
+use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowExtMacOS;
@@ -84,7 +81,7 @@ pub fn winit_window_ref_get_scale_factor(window_ref: *mut ValueBox<WindowRef>) -
 #[no_mangle]
 pub fn winit_window_ref_get_inner_size(
     window_ref: *mut ValueBox<WindowRef>,
-    inner_size: *mut ValueBox<BoxerSizeU32>,
+    inner_size: *mut ValueBox<SizeBox<u32>>,
 ) {
     window_ref
         .to_ref()
@@ -126,7 +123,7 @@ pub fn winit_window_ref_set_inner_size(
 #[no_mangle]
 pub fn winit_window_ref_get_position(
     window_ref: *mut ValueBox<WindowRef>,
-    position: *mut ValueBox<BoxerPointI32>,
+    position: *mut ValueBox<PointBox<i32>>,
 ) {
     window_ref
         .to_ref()
@@ -165,15 +162,12 @@ pub fn winit_window_ref_set_position(
 }
 
 #[no_mangle]
-pub fn winit_window_ref_get_id(
-    window_ref: *mut ValueBox<WindowRef>,
-    id: *mut ValueBox<BoxerUint128>,
-) {
+pub fn winit_window_ref_get_id(window_ref: *mut ValueBox<WindowRef>, id: *mut ValueBox<U128Box>) {
     window_ref
         .to_ref()
         .and_then(|window_ref| {
             id.to_ref().and_then(|mut id| {
-                let window_id: BoxerUint128 = winit_convert_window_id(window_ref.id().clone());
+                let window_id: U128Box = winit_convert_window_id(window_ref.id().clone());
                 id.low = window_id.low;
                 id.high = window_id.high;
                 Ok(())
@@ -196,7 +190,7 @@ pub fn winit_window_ref_get_raw_id(
 pub fn winit_window_ref_set_title(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
-    title: *mut ValueBox<BoxerString>,
+    title: *mut ValueBox<StringBox>,
 ) {
     with_window_mut(event_loop, window_ref, |window, _window_ref| {
         title.to_ref().and_then(|title| {
@@ -260,7 +254,7 @@ pub fn winit_window_ref_get_hwnd(
 #[no_mangle]
 pub fn winit_window_ref_destroy(
     event_loop: *mut ValueBox<PollingEventLoop>,
-    window_ref: &mut *mut ValueBox<WindowRef>,
+    window_ref: *mut ValueBox<WindowRef>,
 ) {
     event_loop
         .to_ref()
@@ -272,5 +266,5 @@ pub fn winit_window_ref_destroy(
             })
         })
         .log();
-    window_ref.drop();
+    window_ref.release();
 }

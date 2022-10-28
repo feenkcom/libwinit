@@ -2,6 +2,19 @@ use winit::window::CursorIcon;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(u32)]
+pub enum WinitUserEvent {
+    /// The virtual machine sends
+    WakeUp,
+}
+
+impl Default for WinitUserEvent {
+    fn default() -> Self {
+        Self::WakeUp
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+#[repr(u32)]
 pub enum WinitCursorIcon {
     /// The platform-dependent default cursor.
     Default,

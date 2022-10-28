@@ -1,6 +1,19 @@
 #[macro_use]
 extern crate log;
 
+use std::mem::transmute_copy;
+
+use geometry_box::U128Box;
+use string_box::StringBox;
+use value_box::{ValueBox, ValueBoxPointer};
+use winit::window::WindowId;
+
+pub use enums::{WinitCursorIcon, WinitUserEvent};
+pub use error::{Result, WinitError};
+pub use ffi::*;
+pub use polling_event_loop::*;
+pub use window_ref::WindowRef;
+
 pub mod enums;
 pub mod event_loop;
 pub mod events;
@@ -11,21 +24,6 @@ mod error;
 mod ffi;
 mod polling_event_loop;
 mod window_ref;
-
-pub use ffi::*;
-
-pub use error::{Result, WinitError};
-
-pub use polling_event_loop::*;
-pub use window_ref::WindowRef;
-
-use boxer::number::BoxerUint128;
-use boxer::string::BoxerString;
-
-use winit::window::WindowId;
-
-use boxer::{ValueBox, ValueBoxPointer};
-use std::mem::transmute_copy;
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// L I B R A R Y /////////////////////////////////////
@@ -42,16 +40,16 @@ pub fn winit_init_logger() {
 }
 
 #[no_mangle]
-pub fn winit_println(_ptr_message: *mut ValueBox<BoxerString>) {
+pub fn winit_println(_ptr_message: *mut ValueBox<StringBox>) {
     _ptr_message.with_not_null(|message| println!("{}", message.to_string()));
 }
 
 #[no_mangle]
-pub fn winit_print(_ptr_message: *mut ValueBox<BoxerString>) {
+pub fn winit_print(_ptr_message: *mut ValueBox<StringBox>) {
     _ptr_message.with_not_null(|message| print!("{}", message.to_string()));
 }
 
-pub fn winit_convert_window_id(window_id: WindowId) -> BoxerUint128 {
+pub fn winit_convert_window_id(window_id: WindowId) -> U128Box {
     let size = std::mem::size_of::<WindowId>();
 
     let id_128: u128 = match size {

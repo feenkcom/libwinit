@@ -1,6 +1,6 @@
 use std::time;
+use value_box::{ValueBox, ValueBoxPointer};
 
-use boxer::{ValueBox, ValueBoxPointer, ValueBoxPointerReference};
 use winit::event_loop::{
     ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget,
 };
@@ -8,11 +8,11 @@ use winit::monitor::MonitorHandle;
 use winit::platform::run_return::EventLoopExtRunReturn;
 
 use crate::events::{EventProcessor, WinitControlFlow, WinitEvent};
+use crate::WinitUserEvent;
 
-pub type WinitCustomEvent = u32;
-pub type WinitEventLoop = EventLoop<WinitCustomEvent>;
-pub type WinitEventLoopBuilder = EventLoopBuilder<WinitCustomEvent>;
-pub type WinitEventLoopProxy = EventLoopProxy<WinitCustomEvent>;
+pub type WinitEventLoop = EventLoop<WinitUserEvent>;
+pub type WinitEventLoopBuilder = EventLoopBuilder<WinitUserEvent>;
+pub type WinitEventLoopProxy = EventLoopProxy<WinitUserEvent>;
 
 #[no_mangle]
 pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
@@ -27,8 +27,8 @@ pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
 }
 
 #[no_mangle]
-pub fn winit_event_loop_drop(_ptr: &mut *mut ValueBox<WinitEventLoop>) {
-    _ptr.drop();
+pub fn winit_event_loop_drop(_ptr: *mut ValueBox<WinitEventLoop>) {
+    _ptr.release();
 }
 
 #[no_mangle]
@@ -46,7 +46,7 @@ pub fn winit_event_loop_run_return(
     event_loop_ptr.with_not_null(|event_loop| {
         event_loop.run_return(
             |event,
-             _events_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+             _events_loop: &EventLoopWindowTarget<WinitUserEvent>,
              control_flow: &mut ControlFlow| {
                 *control_flow = ControlFlow::Poll;
                 let mut c_event: WinitEvent = Default::default();
@@ -82,10 +82,10 @@ pub enum WinitEventLoopType {
 
 #[cfg(target_os = "linux")]
 pub fn get_event_loop_type(
-    _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+    _event_loop: &EventLoopWindowTarget<WinitUserEvent>,
 ) -> WinitEventLoopType {
-    use winit::platform::x11::EventLoopWindowTargetExtX11;
     use winit::platform::wayland::EventLoopWindowTargetExtWayland;
+    use winit::platform::x11::EventLoopWindowTargetExtX11;
 
     if _event_loop.is_wayland() {
         return WinitEventLoopType::Wayland;
@@ -98,21 +98,21 @@ pub fn get_event_loop_type(
 
 #[cfg(target_os = "windows")]
 pub fn get_event_loop_type(
-    _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+    _event_loop: &EventLoopWindowTarget<WinitUserEvent>,
 ) -> WinitEventLoopType {
     WinitEventLoopType::Windows
 }
 
 #[cfg(target_os = "macos")]
 pub fn get_event_loop_type(
-    _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+    _event_loop: &EventLoopWindowTarget<WinitUserEvent>,
 ) -> WinitEventLoopType {
     WinitEventLoopType::MacOS
 }
 
 #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 pub fn get_event_loop_type(
-    _event_loop: &EventLoopWindowTarget<WinitCustomEvent>,
+    _event_loop: &EventLoopWindowTarget<WinitUserEvent>,
 ) -> WinitEventLoopType {
     WinitEventLoopType::Unknown
 }
@@ -134,8 +134,8 @@ fn winit_event_loop_create_proxy(
 }
 
 #[no_mangle]
-fn winit_event_loop_drop_proxy(_ptr: &mut *mut ValueBox<WinitEventLoopProxy>) {
-    _ptr.drop();
+fn winit_event_loop_drop_proxy(event_loop_proxy: *mut ValueBox<WinitEventLoopProxy>) {
+    event_loop_proxy.release();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -160,6 +160,6 @@ fn winit_primary_monitor_get_hidpi_factor(monitor_id_ptr: *mut ValueBox<MonitorH
 }
 
 #[no_mangle]
-fn winit_primary_monitor_drop(ptr: &mut *mut ValueBox<MonitorHandle>) {
-    ptr.drop();
+fn winit_primary_monitor_drop(ptr: *mut ValueBox<MonitorHandle>) {
+    ptr.release();
 }

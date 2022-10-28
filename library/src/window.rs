@@ -1,23 +1,20 @@
-use crate::enums::WinitCursorIcon;
-use crate::event_loop::WinitEventLoop;
-use crate::winit_convert_window_id;
-use boxer::number::BoxerUint128;
-use boxer::point::BoxerPointI32;
-use boxer::size::BoxerSizeU32;
-use boxer::string::BoxerString;
-use boxer::{ValueBox, ValueBoxPointer, ValueBoxPointerReference};
+use geometry_box::{PointBox, SizeBox, U128Box};
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use string_box::StringBox;
+use value_box::{ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
-use winit::window::Window;
-use winit::window::WindowBuilder;
-
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowBuilderExtMacOS;
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowExtMacOS;
-
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
+use winit::window::Window;
+use winit::window::WindowBuilder;
+
+use crate::enums::WinitCursorIcon;
+use crate::event_loop::WinitEventLoop;
+use crate::winit_convert_window_id;
 
 #[no_mangle]
 pub fn winit_create_window(
@@ -78,7 +75,7 @@ pub fn winit_window_get_scale_factor(window_ptr: *mut ValueBox<Window>) -> f64 {
 #[no_mangle]
 pub fn winit_window_get_inner_size(
     window_ptr: *mut ValueBox<Window>,
-    size_ptr: *mut ValueBox<BoxerSizeU32>,
+    size_ptr: *mut ValueBox<SizeBox<u32>>,
 ) {
     window_ptr.with_not_null(|window| {
         size_ptr.with_not_null(|size| {
@@ -97,7 +94,7 @@ pub fn winit_window_set_inner_size(window_ptr: *mut ValueBox<Window>, width: u32
 #[no_mangle]
 pub fn winit_window_get_position(
     window_ptr: *mut ValueBox<Window>,
-    position_ptr: *mut ValueBox<BoxerPointI32>,
+    position_ptr: *mut ValueBox<PointBox<i32>>,
 ) {
     window_ptr.with_not_null(|window| {
         position_ptr.with_not_null(|position| match window.outer_position() {
@@ -122,10 +119,10 @@ pub fn winit_window_set_position(window_ptr: *mut ValueBox<Window>, x: i32, y: i
 }
 
 #[no_mangle]
-pub fn winit_window_get_id(window_ptr: *mut ValueBox<Window>, id_ptr: *mut ValueBox<BoxerUint128>) {
+pub fn winit_window_get_id(window_ptr: *mut ValueBox<Window>, id_ptr: *mut ValueBox<U128Box>) {
     window_ptr.with_not_null(|window| {
         id_ptr.with_not_null(|number| {
-            let id: BoxerUint128 = winit_convert_window_id(window.id());
+            let id: U128Box = winit_convert_window_id(window.id());
             number.low = id.low;
             number.high = id.high
         });
@@ -135,7 +132,7 @@ pub fn winit_window_get_id(window_ptr: *mut ValueBox<Window>, id_ptr: *mut Value
 #[no_mangle]
 pub fn winit_window_set_title(
     window_ptr: *mut ValueBox<Window>,
-    title_ptr: *mut ValueBox<BoxerString>,
+    title_ptr: *mut ValueBox<StringBox>,
 ) {
     window_ptr.with_not_null(|window| {
         title_ptr.with_not_null(|string| window.set_title(string.to_string().as_ref()))
@@ -196,6 +193,6 @@ pub fn winit_window_get_ns_view(window_ptr: *mut ValueBox<Window>) -> cocoa::bas
 }
 
 #[no_mangle]
-pub fn winit_window_drop(ptr: &mut *mut ValueBox<Window>) {
-    ptr.drop();
+pub fn winit_window_drop(ptr: *mut ValueBox<Window>) {
+    ptr.release();
 }

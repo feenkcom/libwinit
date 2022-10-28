@@ -1,16 +1,18 @@
+use std::ffi::c_void;
+use std::mem::transmute;
+use std::ops::Deref;
+
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
+use winit::window::{WindowBuilder, WindowId};
+
 use crate::event_loop::{get_event_loop_type, WinitEventLoopType};
 use crate::events::WinitEvent;
 use crate::{
     PollingEventLoop, WindowRedrawRequestedListener, WindowRef, WindowResizedListener,
-    WinitCustomEvent, WinitEventLoopWaker,
+    WinitEventLoopWaker, WinitUserEvent,
 };
-use boxer::{ReturnBoxerResult, ValueBox, ValueBoxPointer, ValueBoxPointerReference};
-use std::ffi::c_void;
-use std::mem::transmute;
-use std::ops::Deref;
-use winit::window::{WindowBuilder, WindowId};
 
-extern "C" fn winit_waker_wake(waker_ptr: *const c_void, event: WinitCustomEvent) -> bool {
+extern "C" fn winit_waker_wake(waker_ptr: *const c_void, event: WinitUserEvent) -> bool {
     let waker_ptr = waker_ptr as *mut ValueBox<WinitEventLoopWaker>;
     waker_ptr.with_not_null_return(false, |waker| match waker.wake(event) {
         Ok(_) => true,
@@ -28,13 +30,13 @@ pub fn winit_event_loop_waker_create(
 }
 
 #[no_mangle]
-pub fn winit_event_loop_waker_function() -> extern "C" fn(*const c_void, u32) -> bool {
+pub fn winit_event_loop_waker_function() -> extern "C" fn(*const c_void, WinitUserEvent) -> bool {
     winit_waker_wake
 }
 
 #[no_mangle]
-pub fn winit_event_loop_waker_drop(event_loop_waker: &mut *mut ValueBox<WinitEventLoopWaker>) {
-    event_loop_waker.drop();
+pub fn winit_event_loop_waker_drop(event_loop_waker: *mut ValueBox<WinitEventLoopWaker>) {
+    event_loop_waker.release();
 }
 
 #[no_mangle]
@@ -45,7 +47,7 @@ pub fn winit_polling_event_loop_new() -> *mut ValueBox<PollingEventLoop> {
 #[no_mangle]
 fn winit_polling_event_loop_wake(
     events_loop: *mut ValueBox<PollingEventLoop>,
-    event: WinitCustomEvent,
+    event: WinitUserEvent,
 ) -> bool {
     events_loop.with_not_null_return(false, |event_loop| match event_loop.wake(event) {
         Ok(_) => true,
@@ -164,6 +166,6 @@ fn winit_polling_event_loop_get_type(
 }
 
 #[no_mangle]
-pub fn winit_polling_event_loop_drop(event_loop: &mut *mut ValueBox<PollingEventLoop>) {
-    event_loop.drop();
+pub fn winit_polling_event_loop_drop(event_loop: *mut ValueBox<PollingEventLoop>) {
+    event_loop.release();
 }
