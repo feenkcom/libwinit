@@ -10,9 +10,9 @@ use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
 use winit::window::{Window, WindowBuilder, WindowId};
 
-use crate::{Result, WindowRef, WinitError, WinitUserEvent};
 use crate::event_loop::WinitEventLoopBuilder;
 use crate::events::{EventProcessor, WinitEvent, WinitEventType};
+use crate::{Result, WindowRef, WinitError, WinitUserEvent};
 
 pub type WinitEventLoop = EventLoop<WinitUserEvent>;
 pub type WinitEventLoopProxy = EventLoopProxy<WinitUserEvent>;
@@ -110,8 +110,8 @@ pub struct PollingEventLoop {
     pub(crate) event_loop_waker: WinitEventLoopWaker,
     semaphore_signaller: Option<SemaphoreSignaller>,
     main_events_cleared_signaller: Option<MainEventClearedSignaller>,
-    window_redraw_listeners: Mutex<HashMap<WindowId, Option<WindowRedrawRequestedListener>>>,
-    window_resize_listeners: Mutex<HashMap<WindowId, Option<WindowResizedListener>>>,
+    window_redraw_listeners: Mutex<HashMap<WindowId, WindowRedrawRequestedListener>>,
+    window_resize_listeners: Mutex<HashMap<WindowId, WindowResizedListener>>,
     pub(crate) running_event_loop: *const EventLoopWindowTarget<WinitUserEvent>,
 }
 
@@ -136,37 +136,35 @@ impl PollingEventLoop {
     ) {
         self.window_redraw_listeners
             .lock()
-            .entry(window_id.clone())
-            .or_insert_with(|| None)
-            .replace(listener);
+            .insert(window_id.clone(), listener);
     }
 
     pub fn remove_redraw_listener(
         &mut self,
         window_id: &WindowId,
     ) -> Option<WindowRedrawRequestedListener> {
-        self.window_redraw_listeners
-            .lock()
-            .remove(window_id)
-            .unwrap_or(None)
+        self.window_redraw_listeners.lock().remove(window_id)
+    }
+
+    pub fn count_redraw_listeners(&self) -> usize {
+        self.window_redraw_listeners.lock().len()
     }
 
     pub fn add_resize_listener(&mut self, window_id: &WindowId, listener: WindowResizedListener) {
         self.window_resize_listeners
             .lock()
-            .entry(window_id.clone())
-            .or_insert_with(|| None)
-            .replace(listener);
+            .insert(window_id.clone(), listener);
     }
 
     pub fn remove_resize_listener(
         &mut self,
         window_id: &WindowId,
     ) -> Option<WindowResizedListener> {
-        self.window_resize_listeners
-            .lock()
-            .remove(window_id)
-            .unwrap_or(None)
+        self.window_resize_listeners.lock().remove(window_id)
+    }
+
+    pub fn count_resize_listeners(&self) -> usize {
+        self.window_resize_listeners.lock().len()
     }
 
     pub fn with_semaphore_signaller(
@@ -219,10 +217,8 @@ impl PollingEventLoop {
     /// Is called when a window requested to be redrawn
     fn on_redraw_requested(&self, window_id: &WindowId) -> Result<()> {
         trace!("Received RedrawRequested({:?})", window_id);
-        if let Some(listeners) = self.window_redraw_listeners.lock().get(window_id) {
-            for listener in listeners {
-                listener.on_redraw_requested();
-            }
+        if let Some(listener) = self.window_redraw_listeners.lock().get(window_id) {
+            listener.on_redraw_requested();
         }
         Ok(())
     }
@@ -233,10 +229,8 @@ impl PollingEventLoop {
             window_ref.set_inner_size(size.clone())
         })?;
 
-        if let Some(listeners) = self.window_resize_listeners.lock().get(window_id) {
-            for listener in listeners {
-                listener.on_window_resized(size);
-            }
+        if let Some(listener) = self.window_resize_listeners.lock().get(window_id) {
+            listener.on_window_resized(size);
         }
 
         self.with_window(window_id, |window| Ok(window.request_redraw()))?;
@@ -256,9 +250,7 @@ impl PollingEventLoop {
         })?;
 
         if let Some(listeners) = self.window_resize_listeners.lock().get(window_id) {
-            for listener in listeners {
-                listener.on_window_resized(&new_inner_size);
-            }
+            listeners.on_window_resized(&new_inner_size);
         }
 
         self.with_window(window_id, |window| Ok(window.request_redraw()))?;
@@ -311,8 +303,11 @@ impl PollingEventLoop {
             .and_then(|(window_ref, window)| callback(window, window_ref))
     }
 
-    /// Destroy a window by its id
+    /// Destroy a window by its id. Removes all assigned resize and redraw listeners
     pub fn destroy_window(&mut self, window_id: &WindowId) -> Result<()> {
+        self.window_resize_listeners.lock().remove(window_id);
+        self.window_redraw_listeners.lock().remove(window_id);
+
         if let Some(window) = self.windows.lock().remove(window_id) {
             drop(window);
             info!("Closed window with id {:?}", window_id);

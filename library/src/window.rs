@@ -1,7 +1,7 @@
 use geometry_box::{PointBox, SizeBox, U128Box};
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use string_box::StringBox;
-use value_box::{ValueBox, ValueBoxPointer};
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowBuilderExtMacOS;
@@ -55,21 +55,19 @@ pub fn winit_create_window(
 
 #[no_mangle]
 pub fn winit_windowed_context_raw_window_handle(
-    _ptr_window: *mut ValueBox<Window>,
+    window: *mut ValueBox<Window>,
 ) -> *mut ValueBox<RawWindowHandle> {
-    _ptr_window.with_not_null_return(std::ptr::null_mut(), |context| {
-        ValueBox::new(context.raw_window_handle()).into_raw()
-    })
+    window.with_ref(Window::raw_window_handle).into_raw()
 }
 
 #[no_mangle]
-pub fn winit_window_request_redraw(window_ptr: *mut ValueBox<Window>) {
-    window_ptr.with_not_null(|window| window.request_redraw());
+pub fn winit_window_request_redraw(window: *mut ValueBox<Window>) {
+    window.with_ref(Window::request_redraw).log();
 }
 
 #[no_mangle]
-pub fn winit_window_get_scale_factor(window_ptr: *mut ValueBox<Window>) -> f64 {
-    window_ptr.with_not_null_return(1.0, |window| window.scale_factor())
+pub fn winit_window_get_scale_factor(window: *mut ValueBox<Window>) -> f64 {
+    window.with_ref(Window::scale_factor).or_log(1.0)
 }
 
 #[no_mangle]
@@ -87,8 +85,10 @@ pub fn winit_window_get_inner_size(
 }
 
 #[no_mangle]
-pub fn winit_window_set_inner_size(window_ptr: *mut ValueBox<Window>, width: u32, height: u32) {
-    window_ptr.with_not_null(|window| window.set_inner_size(PhysicalSize::new(width, height)));
+pub fn winit_window_set_inner_size(window: *mut ValueBox<Window>, width: u32, height: u32) {
+    window
+        .with_ref(|window| window.set_inner_size(PhysicalSize::new(width, height)))
+        .log();
 }
 
 #[no_mangle]
@@ -114,8 +114,10 @@ pub fn winit_window_get_position(
 }
 
 #[no_mangle]
-pub fn winit_window_set_position(window_ptr: *mut ValueBox<Window>, x: i32, y: i32) {
-    window_ptr.with_not_null(|window| window.set_outer_position(PhysicalPosition::new(x, y)));
+pub fn winit_window_set_position(window: *mut ValueBox<Window>, x: i32, y: i32) {
+    window
+        .with_ref(|window| window.set_outer_position(PhysicalPosition::new(x, y)))
+        .log();
 }
 
 #[no_mangle]

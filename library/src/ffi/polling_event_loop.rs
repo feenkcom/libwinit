@@ -12,21 +12,23 @@ use crate::{
     WinitEventLoopWaker, WinitUserEvent,
 };
 
-extern "C" fn winit_waker_wake(waker_ptr: *const c_void, event: WinitUserEvent) -> bool {
-    let waker_ptr = waker_ptr as *mut ValueBox<WinitEventLoopWaker>;
-    waker_ptr.with_not_null_return(false, |waker| match waker.wake(event) {
-        Ok(_) => true,
-        Err(_) => false,
-    })
+extern "C" fn winit_waker_wake(waker: *const c_void, event: WinitUserEvent) -> bool {
+    let waker = waker as *mut ValueBox<WinitEventLoopWaker>;
+    waker
+        .with_ref(|waker| match waker.wake(event) {
+            Ok(_) => true,
+            Err(_) => false,
+        })
+        .or_log(false)
 }
 
 #[no_mangle]
 pub fn winit_event_loop_waker_create(
-    event_loop_ptr: *mut ValueBox<PollingEventLoop>,
+    event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopWaker> {
-    event_loop_ptr.with_not_null_return(std::ptr::null_mut(), |event_loop| {
-        ValueBox::new(event_loop.event_loop_waker.clone()).into_raw()
-    })
+    event_loop
+        .with_ref(|event_loop| event_loop.event_loop_waker.clone())
+        .into_raw()
 }
 
 #[no_mangle]
@@ -110,6 +112,15 @@ pub fn winit_polling_event_loop_add_resize_listener(
 }
 
 #[no_mangle]
+pub fn winit_polling_event_loop_count_resize_listeners(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+) -> usize {
+    event_loop
+        .with_ref(PollingEventLoop::count_resize_listeners)
+        .or_log(0)
+}
+
+#[no_mangle]
 pub fn winit_polling_event_loop_add_redraw_listener(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_id: *mut ValueBox<WindowId>,
@@ -127,6 +138,15 @@ pub fn winit_polling_event_loop_add_redraw_listener(
             })
         })
         .log();
+}
+
+#[no_mangle]
+pub fn winit_polling_event_loop_count_redraw_listeners(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+) -> usize {
+    event_loop
+        .with_ref(PollingEventLoop::count_redraw_listeners)
+        .or_log(0)
 }
 
 #[no_mangle]
@@ -152,17 +172,20 @@ pub fn winit_polling_event_loop_run(_ptr_event_loop: *mut ValueBox<PollingEventL
     });
 }
 
+/// Must be called from the inside of the `run` method of the [`PollingEventLoop`].
 #[no_mangle]
 fn winit_polling_event_loop_get_type(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> WinitEventLoopType {
-    event_loop.with_not_null_return(WinitEventLoopType::Unknown, |event_loop| {
-        event_loop
-            .event_loop()
-            .map_or(WinitEventLoopType::Unknown, |event_loop| {
-                get_event_loop_type(event_loop)
-            })
-    })
+    event_loop
+        .with_ref(|event_loop| {
+            event_loop
+                .event_loop()
+                .map_or(WinitEventLoopType::Unknown, |event_loop| {
+                    get_event_loop_type(event_loop)
+                })
+        })
+        .or_log(WinitEventLoopType::Unknown)
 }
 
 #[no_mangle]

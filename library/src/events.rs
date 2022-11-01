@@ -391,7 +391,16 @@ impl EventProcessor {
                         c_event.modifiers.logo = modifiers.logo();
                         c_event.modifiers.shift = modifiers.shift();
                     }
-                    _ => result = false,
+                    WindowEvent::DroppedFile(_) => {}
+                    WindowEvent::HoveredFile(_) => {}
+                    WindowEvent::HoveredFileCancelled => {}
+                    WindowEvent::Ime(_) => {}
+                    WindowEvent::TouchpadMagnify { .. } => {}
+                    WindowEvent::TouchpadRotate { .. } => {}
+                    WindowEvent::TouchpadPressure { .. } => {}
+                    WindowEvent::AxisMotion { .. } => {}
+                    WindowEvent::ThemeChanged(_) => {}
+                    WindowEvent::Occluded(_) => {}
                 }
             }
 
