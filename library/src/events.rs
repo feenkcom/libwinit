@@ -614,7 +614,10 @@ fn winit_event_loop_process_cursor_left(c_event: &mut WinitEvent, _: DeviceId) {
     c_event.event_type = WinitEventType::WindowEventCursorLeft;
 }
 
-fn winit_event_loop_process_received_character(c_event: &mut WinitEvent, character: char) {
+pub(crate) fn winit_event_loop_process_received_character(
+    c_event: &mut WinitEvent,
+    character: char,
+) {
     c_event.event_type = WinitEventType::WindowEventReceivedCharacter;
 
     let mut buffer = [0; 4];

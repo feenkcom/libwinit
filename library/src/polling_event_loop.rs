@@ -3,16 +3,19 @@ use std::collections::{HashMap, VecDeque};
 use std::ffi::c_void;
 use std::sync::Arc;
 
+use geometry_box::U128Box;
 use parking_lot::Mutex;
 use value_box::{BoxerError, ReturnBoxerResult};
 use winit::dpi::PhysicalSize;
-use winit::event::{Event, WindowEvent};
+use winit::event::{Event, Ime, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
 use winit::window::{Window, WindowBuilder, WindowId};
 
 use crate::event_loop::WinitEventLoopBuilder;
-use crate::events::{EventProcessor, WinitEvent, WinitEventType};
-use crate::{Result, WindowRef, WinitError, WinitUserEvent};
+use crate::events::{
+    winit_event_loop_process_received_character, EventProcessor, WinitEvent, WinitEventType,
+};
+use crate::{winit_convert_window_id, Result, WindowRef, WinitError, WinitUserEvent};
 
 pub type WinitEventLoop = EventLoop<WinitUserEvent>;
 pub type WinitEventLoopProxy = EventLoopProxy<WinitUserEvent>;
@@ -271,6 +274,8 @@ impl PollingEventLoop {
                     window_ref.set_outer_position(position)?;
                 }
 
+                window.set_ime_allowed(true);
+
                 self.windows
                     .lock()
                     .insert(window_id, (window_ref.clone(), window));
@@ -336,6 +341,23 @@ impl PollingEventLoop {
                         scale_factor,
                         new_inner_size,
                     } => self.on_window_scale_changed(window_id, scale_factor, new_inner_size),
+                    WindowEvent::Ime(ime) => {
+                        match ime {
+                            Ime::Enabled => {}
+                            Ime::Preedit(_, _) => {}
+                            Ime::Commit(string) => {
+                                for char in string.chars() {
+                                    let mut c_event = WinitEvent::default();
+                                    let id: U128Box = winit_convert_window_id(window_id.clone());
+                                    c_event.window_id.clone_from(&id);
+                                    winit_event_loop_process_received_character(&mut c_event, char);
+                                    self.push(c_event);
+                                }
+                            }
+                            Ime::Disabled => {}
+                        }
+                        Ok(())
+                    }
                     _ => Ok(()),
                 },
                 _ => Ok(()),
