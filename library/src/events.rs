@@ -643,6 +643,6 @@ pub(crate) fn winit_event_loop_process_received_character(
 }
 
 #[no_mangle]
-pub fn winit_event_drop(ptr: *mut ValueBox<WinitEvent>) {
+pub extern fn winit_event_drop(ptr: *mut ValueBox<WinitEvent>) {
     ptr.release();
 }

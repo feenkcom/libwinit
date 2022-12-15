@@ -173,6 +173,8 @@ pipeline {
                 sh "curl -o feenk-releaser -LsS https://github.com/feenkcom/releaser-rs/releases/download/${FEENK_RELEASER_VERSION}/feenk-releaser-${TARGET}"
                 sh "chmod +x feenk-releaser"
 
+                sh "cbindgen --config cbindgen.toml --crate libwinit --output winit.h"
+
                 sh """
                 ./feenk-releaser \
                     --owner ${REPOSITORY_OWNER} \
@@ -185,7 +187,8 @@ pipeline {
                         lib${LIBRARY_NAME}-${MACOS_INTEL_TARGET}.dylib \
                         lib${LIBRARY_NAME}-${MACOS_M1_TARGET}.dylib \
                         ${LIBRARY_NAME}-${WINDOWS_AMD64_TARGET}.dll \
-                        ${LIBRARY_NAME}-${WINDOWS_ARM64_TARGET}.dll """
+                        ${LIBRARY_NAME}-${WINDOWS_ARM64_TARGET}.dll \
+                        winit.h """
             }
         }
     }

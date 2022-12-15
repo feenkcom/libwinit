@@ -13,3 +13,8 @@
 .idea/
 deploy_key
 .DS_Store
+examples/**/*.dylib
+examples/**/*.so
+examples/**/*.dll
+examples/**/*.h
+*.h

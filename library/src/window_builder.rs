@@ -4,17 +4,17 @@ use winit::dpi::LogicalSize;
 use winit::window::WindowBuilder;
 
 #[no_mangle]
-pub fn winit_window_builder_new() -> *mut ValueBox<WindowBuilder> {
+pub extern fn winit_window_builder_new() -> *mut ValueBox<WindowBuilder> {
     ValueBox::new(WindowBuilder::new()).into_raw()
 }
 
 #[no_mangle]
-pub fn winit_window_builder_drop(window_builder: *mut ValueBox<WindowBuilder>) {
+pub extern fn winit_window_builder_drop(window_builder: *mut ValueBox<WindowBuilder>) {
     window_builder.release();
 }
 
 #[no_mangle]
-pub fn winit_window_builder_with_title(
+pub extern fn winit_window_builder_with_title(
     mut window_builder_ptr: *mut ValueBox<WindowBuilder>,
     _ptr_boxer_string: *mut ValueBox<StringBox>,
 ) {
@@ -25,7 +25,7 @@ pub fn winit_window_builder_with_title(
 }
 
 #[no_mangle]
-pub fn winit_window_builder_with_decorations(
+pub extern fn winit_window_builder_with_decorations(
     mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
     with_decorations: bool,
 ) {
@@ -34,7 +34,7 @@ pub fn winit_window_builder_with_decorations(
 }
 
 #[no_mangle]
-pub fn winit_window_builder_with_transparency(
+pub extern fn winit_window_builder_with_transparency(
     mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
     with_transparency: bool,
 ) {
@@ -43,7 +43,7 @@ pub fn winit_window_builder_with_transparency(
 }
 
 #[no_mangle]
-pub fn winit_window_builder_with_resizable(
+pub extern fn winit_window_builder_with_resizable(
     mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
     with_resizable: bool,
 ) {
@@ -51,7 +51,7 @@ pub fn winit_window_builder_with_resizable(
 }
 
 #[no_mangle]
-pub fn winit_window_builder_with_dimensions(
+pub extern fn winit_window_builder_with_dimensions(
     mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
     width: f64,
     height: f64,
@@ -62,7 +62,7 @@ pub fn winit_window_builder_with_dimensions(
 }
 
 #[no_mangle]
-pub fn winit_window_builder_with_maximized(
+pub extern fn winit_window_builder_with_maximized(
     mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
     with_maximized: bool,
 ) {
@@ -70,7 +70,7 @@ pub fn winit_window_builder_with_maximized(
 }
 
 #[no_mangle]
-pub fn winit_window_builder_with_visibility(
+pub extern fn winit_window_builder_with_visibility(
     mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
     with_visibility: bool,
 ) {
@@ -78,7 +78,7 @@ pub fn winit_window_builder_with_visibility(
 }
 
 #[no_mangle]
-pub fn winit_window_builder_with_always_on_top(
+pub extern fn winit_window_builder_with_always_on_top(
     mut _ptr_window_builder: *mut ValueBox<WindowBuilder>,
     with_always_on_top: bool,
 ) {

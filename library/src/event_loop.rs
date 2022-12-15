@@ -15,7 +15,7 @@ pub type WinitEventLoopBuilder = EventLoopBuilder<WinitUserEvent>;
 pub type WinitEventLoopProxy = EventLoopProxy<WinitUserEvent>;
 
 #[no_mangle]
-pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
+pub extern fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
     #[cfg(target_os = "linux")]
     {
         // respect the winit backend if it is set
@@ -27,12 +27,12 @@ pub fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
 }
 
 #[no_mangle]
-pub fn winit_event_loop_drop(_ptr: *mut ValueBox<WinitEventLoop>) {
+pub extern fn winit_event_loop_drop(_ptr: *mut ValueBox<WinitEventLoop>) {
     _ptr.release();
 }
 
 #[no_mangle]
-pub fn winit_event_loop_run_return(
+pub extern fn winit_event_loop_run_return(
     event_loop_ptr: *mut ValueBox<WinitEventLoop>,
     callback: extern "C" fn(*mut WinitEvent) -> WinitControlFlow,
 ) {
@@ -118,14 +118,14 @@ pub fn get_event_loop_type(
 }
 
 #[no_mangle]
-fn winit_event_loop_get_type(_ptr_event_loop: *mut ValueBox<WinitEventLoop>) -> WinitEventLoopType {
+pub extern fn winit_event_loop_get_type(_ptr_event_loop: *mut ValueBox<WinitEventLoop>) -> WinitEventLoopType {
     _ptr_event_loop.with_not_null_return(WinitEventLoopType::Unknown, |event_loop| {
         get_event_loop_type(event_loop)
     })
 }
 
 #[no_mangle]
-fn winit_event_loop_create_proxy(
+pub extern fn winit_event_loop_create_proxy(
     _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopProxy> {
     _ptr_event_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
@@ -134,7 +134,7 @@ fn winit_event_loop_create_proxy(
 }
 
 #[no_mangle]
-fn winit_event_loop_drop_proxy(event_loop_proxy: *mut ValueBox<WinitEventLoopProxy>) {
+pub extern fn winit_event_loop_drop_proxy(event_loop_proxy: *mut ValueBox<WinitEventLoopProxy>) {
     event_loop_proxy.release();
 }
 
@@ -143,7 +143,7 @@ fn winit_event_loop_drop_proxy(event_loop_proxy: *mut ValueBox<WinitEventLoopPro
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #[no_mangle]
-fn winit_event_loop_get_primary_monitor(
+pub extern fn winit_event_loop_get_primary_monitor(
     _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<MonitorHandle> {
     _ptr_event_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
@@ -155,11 +155,11 @@ fn winit_event_loop_get_primary_monitor(
 }
 
 #[no_mangle]
-fn winit_primary_monitor_get_hidpi_factor(monitor_id_ptr: *mut ValueBox<MonitorHandle>) -> f64 {
+pub extern fn winit_primary_monitor_get_hidpi_factor(monitor_id_ptr: *mut ValueBox<MonitorHandle>) -> f64 {
     monitor_id_ptr.with_not_null_return(1.0, |monitor_id| monitor_id.scale_factor())
 }
 
 #[no_mangle]
-fn winit_primary_monitor_drop(ptr: *mut ValueBox<MonitorHandle>) {
+pub extern fn winit_primary_monitor_drop(ptr: *mut ValueBox<MonitorHandle>) {
     ptr.release();
 }

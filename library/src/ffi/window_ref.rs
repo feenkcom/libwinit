@@ -49,7 +49,7 @@ fn with_window_mut<T>(
 /// Return the raw window handle that can be used to create a native rendering context.
 /// Must only be called from the main thread
 #[no_mangle]
-pub fn winit_window_ref_raw_window_handle(
+pub extern fn winit_window_ref_raw_window_handle(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut ValueBox<RawWindowHandle> {
@@ -61,7 +61,7 @@ pub fn winit_window_ref_raw_window_handle(
 
 /// Request the window to redraw. Can be called from any thread.
 #[no_mangle]
-pub fn winit_window_ref_request_redraw(
+pub extern fn winit_window_ref_request_redraw(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) {
@@ -70,7 +70,7 @@ pub fn winit_window_ref_request_redraw(
 
 /// Get the scaled factor of the window. Can be called from the any thread.
 #[no_mangle]
-pub fn winit_window_ref_get_scale_factor(window_ref: *mut ValueBox<WindowRef>) -> f64 {
+pub extern fn winit_window_ref_get_scale_factor(window_ref: *mut ValueBox<WindowRef>) -> f64 {
     window_ref
         .to_ref()
         .and_then(|window_ref| window_ref.scale_factor().map_err(|err| err.boxed().into()))
@@ -79,7 +79,7 @@ pub fn winit_window_ref_get_scale_factor(window_ref: *mut ValueBox<WindowRef>) -
 
 /// Get the inner size of the window. Can be called from the any thread.
 #[no_mangle]
-pub fn winit_window_ref_get_inner_size(
+pub extern fn winit_window_ref_get_inner_size(
     window_ref: *mut ValueBox<WindowRef>,
     inner_size: *mut ValueBox<SizeBox<u32>>,
 ) {
@@ -103,7 +103,7 @@ pub fn winit_window_ref_get_inner_size(
 /// Set the inner size of the window.
 /// Must be called from the main thread
 #[no_mangle]
-pub fn winit_window_ref_set_inner_size(
+pub extern fn winit_window_ref_set_inner_size(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
     width: u32,
@@ -121,7 +121,7 @@ pub fn winit_window_ref_set_inner_size(
 
 /// Get the outer position of the window. Can be called from the any thread.
 #[no_mangle]
-pub fn winit_window_ref_get_position(
+pub extern fn winit_window_ref_get_position(
     window_ref: *mut ValueBox<WindowRef>,
     position: *mut ValueBox<PointBox<i32>>,
 ) {
@@ -145,7 +145,7 @@ pub fn winit_window_ref_get_position(
 /// Set the outer position of the window.
 /// Must be called from the main thread
 #[no_mangle]
-pub fn winit_window_ref_set_position(
+pub extern fn winit_window_ref_set_position(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
     x: i32,
@@ -162,7 +162,7 @@ pub fn winit_window_ref_set_position(
 }
 
 #[no_mangle]
-pub fn winit_window_ref_get_id(window_ref: *mut ValueBox<WindowRef>, id: *mut ValueBox<U128Box>) {
+pub extern fn winit_window_ref_get_id(window_ref: *mut ValueBox<WindowRef>, id: *mut ValueBox<U128Box>) {
     window_ref
         .to_ref()
         .and_then(|window_ref| {
@@ -177,7 +177,7 @@ pub fn winit_window_ref_get_id(window_ref: *mut ValueBox<WindowRef>, id: *mut Va
 }
 
 #[no_mangle]
-pub fn winit_window_ref_get_raw_id(
+pub extern fn winit_window_ref_get_raw_id(
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut ValueBox<WindowId> {
     window_ref
@@ -187,7 +187,7 @@ pub fn winit_window_ref_get_raw_id(
 }
 
 #[no_mangle]
-pub fn winit_window_ref_set_title(
+pub extern fn winit_window_ref_set_title(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
     title: *mut ValueBox<StringBox>,
@@ -202,7 +202,7 @@ pub fn winit_window_ref_set_title(
 }
 
 #[no_mangle]
-pub fn winit_window_ref_set_cursor_icon(
+pub extern fn winit_window_ref_set_cursor_icon(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
     cursor_icon: WinitCursorIcon,
@@ -215,7 +215,7 @@ pub fn winit_window_ref_set_cursor_icon(
 }
 
 #[no_mangle]
-pub fn winit_window_ref_set_maximized(
+pub extern fn winit_window_ref_set_maximized(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
     maximized: bool,
@@ -229,7 +229,7 @@ pub fn winit_window_ref_set_maximized(
 
 #[cfg(target_os = "macos")]
 #[no_mangle]
-pub fn winit_window_ref_get_ns_view(
+pub extern fn winit_window_ref_get_ns_view(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> cocoa::base::id {
@@ -241,7 +241,7 @@ pub fn winit_window_ref_get_ns_view(
 
 #[cfg(target_os = "windows")]
 #[no_mangle]
-pub fn winit_window_ref_get_hwnd(
+pub extern fn winit_window_ref_get_hwnd(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut std::ffi::c_void {
@@ -252,7 +252,7 @@ pub fn winit_window_ref_get_hwnd(
 }
 
 #[no_mangle]
-pub fn winit_window_ref_destroy(
+pub extern fn winit_window_ref_destroy(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) {
