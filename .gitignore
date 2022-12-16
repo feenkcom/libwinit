@@ -18,3 +18,4 @@ examples/**/*.so
 examples/**/*.dll
 examples/**/*.h
 *.h
+examples/c-api/main

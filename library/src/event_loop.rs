@@ -1,6 +1,7 @@
+use std::os::raw::c_void;
 use std::time;
-use value_box::{ValueBox, ValueBoxPointer};
 
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::event_loop::{
     ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget,
 };
@@ -15,7 +16,7 @@ pub type WinitEventLoopBuilder = EventLoopBuilder<WinitUserEvent>;
 pub type WinitEventLoopProxy = EventLoopProxy<WinitUserEvent>;
 
 #[no_mangle]
-pub extern fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
+pub extern "C" fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
     #[cfg(target_os = "linux")]
     {
         // respect the winit backend if it is set
@@ -27,12 +28,12 @@ pub extern fn winit_event_loop_new() -> *mut ValueBox<WinitEventLoop> {
 }
 
 #[no_mangle]
-pub extern fn winit_event_loop_drop(_ptr: *mut ValueBox<WinitEventLoop>) {
+pub extern "C" fn winit_event_loop_drop(_ptr: *mut ValueBox<WinitEventLoop>) {
     _ptr.release();
 }
 
 #[no_mangle]
-pub extern fn winit_event_loop_run_return(
+pub extern "C" fn winit_event_loop_run_return(
     event_loop_ptr: *mut ValueBox<WinitEventLoop>,
     callback: extern "C" fn(*mut WinitEvent) -> WinitControlFlow,
 ) {
@@ -49,6 +50,7 @@ pub extern fn winit_event_loop_run_return(
              _events_loop: &EventLoopWindowTarget<WinitUserEvent>,
              control_flow: &mut ControlFlow| {
                 *control_flow = ControlFlow::Poll;
+
                 let mut c_event: WinitEvent = Default::default();
                 let processed = event_processor.process(event, &mut c_event);
                 if processed {
@@ -68,6 +70,73 @@ pub extern fn winit_event_loop_run_return(
             },
         );
     });
+}
+
+/// Initializes the winit event loop.
+/// Unlike EventLoop::run, this function accepts non-'static (i.e. non-move) closures
+/// and returns control flow to the caller when control_flow is set to ControlFlow::Exit.
+#[no_mangle]
+pub extern "C" fn winit_event_loop_run_return_data(
+    event_loop: *mut ValueBox<WinitEventLoop>,
+    data: *mut c_void,
+    callback: extern "C" fn(*mut c_void, *mut WinitEvent) -> WinitControlFlow,
+) {
+    event_loop
+        .with_mut(|event_loop| {
+            let mut event_processor = EventProcessor::new();
+            event_loop.run_return(
+                |event,
+                 _events_loop: &EventLoopWindowTarget<WinitUserEvent>,
+                 control_flow: &mut ControlFlow| {
+                    control_flow.set_wait();
+
+                    let mut c_event: WinitEvent = Default::default();
+                    let processed = event_processor.process(event, &mut c_event);
+                    if processed {
+                        let c_event_ptr = Box::into_raw(Box::new(c_event));
+                        let c_control_flow = callback(data, c_event_ptr);
+                        unsafe { Box::from_raw(c_event_ptr) };
+                        *control_flow = c_control_flow.into();
+                    }
+                },
+            );
+        })
+        .log();
+}
+
+/// Hijacks the calling thread and initializes the winit event loop with the provided closure.
+/// Since the closure is 'static, it must be a move closure if it needs to access any data from the calling context.
+/// See the ControlFlow docs for information on how changes to &mut ControlFlow impact the event loop's behavior.
+/// Any values not passed to this function will not be dropped.
+#[no_mangle]
+pub extern "C" fn winit_event_loop_run_data(
+    event_loop: *mut ValueBox<WinitEventLoop>,
+    data: *mut c_void,
+    callback: extern "C" fn(*mut c_void, *mut WinitEvent) -> WinitControlFlow,
+) {
+    event_loop
+        .to_ref()
+        .map(|event_loop_ref| {
+            let event_loop = unsafe { std::ptr::read(event_loop_ref.as_ptr()) };
+            let mut event_processor = EventProcessor::new();
+            event_loop.run(
+                move |event,
+                      _events_loop: &EventLoopWindowTarget<WinitUserEvent>,
+                      control_flow: &mut ControlFlow| {
+                    control_flow.set_wait();
+                    let mut c_event: WinitEvent = Default::default();
+                    let processed = event_processor.process(event, &mut c_event);
+                    if processed {
+                        let c_event_ptr = Box::into_raw(Box::new(c_event));
+                        let c_control_flow = callback(data, c_event_ptr);
+                        unsafe { Box::from_raw(c_event_ptr) };
+
+                        *control_flow = c_control_flow.into();
+                    }
+                },
+            )
+        })
+        .log();
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -118,14 +187,16 @@ pub fn get_event_loop_type(
 }
 
 #[no_mangle]
-pub extern fn winit_event_loop_get_type(_ptr_event_loop: *mut ValueBox<WinitEventLoop>) -> WinitEventLoopType {
+pub extern "C" fn winit_event_loop_get_type(
+    _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
+) -> WinitEventLoopType {
     _ptr_event_loop.with_not_null_return(WinitEventLoopType::Unknown, |event_loop| {
         get_event_loop_type(event_loop)
     })
 }
 
 #[no_mangle]
-pub extern fn winit_event_loop_create_proxy(
+pub extern "C" fn winit_event_loop_create_proxy(
     _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopProxy> {
     _ptr_event_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
@@ -134,7 +205,9 @@ pub extern fn winit_event_loop_create_proxy(
 }
 
 #[no_mangle]
-pub extern fn winit_event_loop_drop_proxy(event_loop_proxy: *mut ValueBox<WinitEventLoopProxy>) {
+pub extern "C" fn winit_event_loop_drop_proxy(
+    event_loop_proxy: *mut ValueBox<WinitEventLoopProxy>,
+) {
     event_loop_proxy.release();
 }
 
@@ -143,7 +216,7 @@ pub extern fn winit_event_loop_drop_proxy(event_loop_proxy: *mut ValueBox<WinitE
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #[no_mangle]
-pub extern fn winit_event_loop_get_primary_monitor(
+pub extern "C" fn winit_event_loop_get_primary_monitor(
     _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<MonitorHandle> {
     _ptr_event_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
@@ -155,11 +228,13 @@ pub extern fn winit_event_loop_get_primary_monitor(
 }
 
 #[no_mangle]
-pub extern fn winit_primary_monitor_get_hidpi_factor(monitor_id_ptr: *mut ValueBox<MonitorHandle>) -> f64 {
+pub extern "C" fn winit_primary_monitor_get_hidpi_factor(
+    monitor_id_ptr: *mut ValueBox<MonitorHandle>,
+) -> f64 {
     monitor_id_ptr.with_not_null_return(1.0, |monitor_id| monitor_id.scale_factor())
 }
 
 #[no_mangle]
-pub extern fn winit_primary_monitor_drop(ptr: *mut ValueBox<MonitorHandle>) {
+pub extern "C" fn winit_primary_monitor_drop(ptr: *mut ValueBox<MonitorHandle>) {
     ptr.release();
 }

@@ -24,7 +24,7 @@ pub extern "C" fn winit_waker_wake(waker: *const c_void, event: WinitUserEvent) 
 }
 
 #[no_mangle]
-pub extern fn winit_event_loop_waker_create(
+pub extern "C" fn winit_event_loop_waker_create(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopWaker> {
     event_loop
@@ -33,22 +33,25 @@ pub extern fn winit_event_loop_waker_create(
 }
 
 #[no_mangle]
-pub extern fn winit_event_loop_waker_function() -> extern "C" fn(*const c_void, WinitUserEvent) -> bool {
+pub extern "C" fn winit_event_loop_waker_function(
+) -> extern "C" fn(*const c_void, WinitUserEvent) -> bool {
     winit_waker_wake
 }
 
 #[no_mangle]
-pub extern fn winit_event_loop_waker_drop(event_loop_waker: *mut ValueBox<WinitEventLoopWaker>) {
+pub extern "C" fn winit_event_loop_waker_drop(
+    event_loop_waker: *mut ValueBox<WinitEventLoopWaker>,
+) {
     event_loop_waker.release();
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_new() -> *mut ValueBox<PollingEventLoop> {
+pub extern "C" fn winit_polling_event_loop_new() -> *mut ValueBox<PollingEventLoop> {
     ValueBox::new(PollingEventLoop::new()).into_raw()
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_wake(
+pub extern "C" fn winit_polling_event_loop_wake(
     events_loop: *mut ValueBox<PollingEventLoop>,
     event: WinitUserEvent,
 ) -> bool {
@@ -59,7 +62,7 @@ pub extern fn winit_polling_event_loop_wake(
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_create_window(
+pub extern "C" fn winit_polling_event_loop_create_window(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_builder: *mut ValueBox<WindowBuilder>,
 ) -> *mut ValueBox<WindowRef> {
@@ -77,7 +80,7 @@ pub extern fn winit_polling_event_loop_create_window(
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_new_with_semaphore_and_main_events_signaller(
+pub extern "C" fn winit_polling_event_loop_new_with_semaphore_and_main_events_signaller(
     semaphore_callback: extern "C" fn(usize, *const c_void),
     semaphore_index: usize,
     semaphore_thunk: *const c_void,
@@ -93,7 +96,7 @@ pub extern fn winit_polling_event_loop_new_with_semaphore_and_main_events_signal
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_add_resize_listener(
+pub extern "C" fn winit_polling_event_loop_add_resize_listener(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_id: *mut ValueBox<WindowId>,
     callback: unsafe extern "C" fn(*const c_void, u32, u32),
@@ -113,7 +116,7 @@ pub extern fn winit_polling_event_loop_add_resize_listener(
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_count_resize_listeners(
+pub extern "C" fn winit_polling_event_loop_count_resize_listeners(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> usize {
     event_loop
@@ -122,7 +125,7 @@ pub extern fn winit_polling_event_loop_count_resize_listeners(
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_add_redraw_listener(
+pub extern "C" fn winit_polling_event_loop_add_redraw_listener(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_id: *mut ValueBox<WindowId>,
     callback: unsafe extern "C" fn(*const c_void),
@@ -142,7 +145,7 @@ pub extern fn winit_polling_event_loop_add_redraw_listener(
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_count_redraw_listeners(
+pub extern "C" fn winit_polling_event_loop_count_redraw_listeners(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> usize {
     event_loop
@@ -151,7 +154,7 @@ pub extern fn winit_polling_event_loop_count_redraw_listeners(
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_poll(
+pub extern "C" fn winit_polling_event_loop_poll(
     _ptr: *mut ValueBox<PollingEventLoop>,
 ) -> *mut ValueBox<WinitEvent> {
     _ptr.with_not_null_return(std::ptr::null_mut(), |event_loop| match event_loop.poll() {
@@ -161,7 +164,7 @@ pub extern fn winit_polling_event_loop_poll(
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_run(_ptr_event_loop: *mut ValueBox<PollingEventLoop>) {
+pub extern "C" fn winit_polling_event_loop_run(_ptr_event_loop: *mut ValueBox<PollingEventLoop>) {
     if _ptr_event_loop.is_null() {
         eprintln!("[winit_polling_event_loop_run_return] _ptr_event_loop is null");
         return;
@@ -175,7 +178,7 @@ pub extern fn winit_polling_event_loop_run(_ptr_event_loop: *mut ValueBox<Pollin
 
 /// Must be called from the inside of the `run` method of the [`PollingEventLoop`].
 #[no_mangle]
-pub extern fn winit_polling_event_loop_get_type(
+pub extern "C" fn winit_polling_event_loop_get_type(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> WinitEventLoopType {
     event_loop
@@ -190,6 +193,6 @@ pub extern fn winit_polling_event_loop_get_type(
 }
 
 #[no_mangle]
-pub extern fn winit_polling_event_loop_drop(event_loop: *mut ValueBox<PollingEventLoop>) {
+pub extern "C" fn winit_polling_event_loop_drop(event_loop: *mut ValueBox<PollingEventLoop>) {
     event_loop.release();
 }

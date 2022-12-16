@@ -3,8 +3,16 @@
 
 #include "winit.h"
 
-WinitControlFlow process_event(WinitEvent* event) {
+typedef struct UserData {
+  Window* window;
+} UserData;
+
+WinitControlFlow process_event(void* data, WinitEvent* event) {
     // rust owns `event`, no need to drop
+
+    printf("New event\n");
+
+    UserData* user_data = (UserData*) data;
 
     if (event -> event_type == WinitEventType_WindowEventCloseRequested) {
         return WinitControlFlow_Exit;
@@ -20,6 +28,10 @@ WinitControlFlow process_event(WinitEvent* event) {
 
     if (event -> event_type == WinitEventType_WindowEventScaleFactorChanged) {
         printf("Scale factor changed to: %f. New physical size: (%d x %d)\n", event -> scale_factor.scale_factor, event -> scale_factor.width, event -> scale_factor.height);
+    }
+
+    if (event -> event_type == WinitEventType_MainEventsCleared) {
+        //winit_window_request_redraw(user_data -> window);
     }
 
     return WinitControlFlow_Wait;
@@ -43,8 +55,11 @@ int main() {
     // don't forget to drop the window builder!
     winit_window_builder_drop(window_builder);
 
+    struct UserData user_data;
+    user_data.window = window;
+
     // run the event loop, will continue if `process_event` returns WinitControlFlow_Exit
-    winit_event_loop_run_return(event_loop, process_event);
+    winit_event_loop_run_return_data(event_loop, (void*)&user_data, process_event);
 
     winit_window_drop(window);
     winit_event_loop_drop(event_loop);

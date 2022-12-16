@@ -5,6 +5,7 @@ use geometry_box::U128Box;
 use value_box::{ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::*;
+use winit::event_loop::ControlFlow;
 
 use crate::{winit_convert_window_id, WinitUserEvent};
 
@@ -270,6 +271,16 @@ pub enum WinitControlFlow {
     /// `control_flow` cannot be changed from `Exit`, and any future attempts to do so will result
     /// in the `control_flow` parameter being reset to `Exit`.
     Exit,
+}
+
+impl From<WinitControlFlow> for ControlFlow {
+    fn from(control_flow: WinitControlFlow) -> Self {
+        match control_flow {
+            WinitControlFlow::Poll => ControlFlow::Poll,
+            WinitControlFlow::Wait => ControlFlow::Wait,
+            WinitControlFlow::Exit => ControlFlow::Exit,
+        }
+    }
 }
 
 impl Default for WinitEventInputElementState {
@@ -643,6 +654,6 @@ pub(crate) fn winit_event_loop_process_received_character(
 }
 
 #[no_mangle]
-pub extern fn winit_event_drop(ptr: *mut ValueBox<WinitEvent>) {
+pub extern "C" fn winit_event_drop(ptr: *mut ValueBox<WinitEvent>) {
     ptr.release();
 }

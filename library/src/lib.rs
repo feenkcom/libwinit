@@ -30,22 +30,22 @@ mod window_ref;
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #[no_mangle]
-pub extern fn winit_test() -> bool {
+pub extern "C" fn winit_test() -> bool {
     return true;
 }
 
 #[no_mangle]
-pub extern fn winit_init_logger() {
+pub extern "C" fn winit_init_logger() {
     env_logger::init();
 }
 
 #[no_mangle]
-pub extern fn winit_println(_ptr_message: *mut ValueBox<StringBox>) {
+pub extern "C" fn winit_println(_ptr_message: *mut ValueBox<StringBox>) {
     _ptr_message.with_not_null(|message| println!("{}", message.to_string()));
 }
 
 #[no_mangle]
-pub extern fn winit_print(_ptr_message: *mut ValueBox<StringBox>) {
+pub extern "C" fn winit_print(_ptr_message: *mut ValueBox<StringBox>) {
     _ptr_message.with_not_null(|message| print!("{}", message.to_string()));
 }
 
