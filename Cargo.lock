@@ -540,7 +540,7 @@ dependencies = [
  "geometry-box",
  "log",
  "parking_lot",
- "raw-window-handle 0.4.3",
+ "raw-window-handle 0.5.0",
  "string-box",
  "thiserror",
  "value-box",

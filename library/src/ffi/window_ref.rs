@@ -1,7 +1,7 @@
 use std::ops::DerefMut;
 
 use geometry_box::{PointBox, SizeBox, U128Box};
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle};
 use string_box::StringBox;
 use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
@@ -57,6 +57,19 @@ pub extern "C" fn winit_window_ref_raw_window_handle(
         Ok(window.raw_window_handle())
     })
     .into_raw()
+}
+
+/// Return the raw window handle that can be used to create a native rendering context.
+/// Must only be called from the main thread
+#[no_mangle]
+pub extern "C" fn winit_window_ref_raw_display_handle(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    window_ref: *mut ValueBox<WindowRef>,
+) -> *mut ValueBox<RawDisplayHandle> {
+    with_window(event_loop, window_ref, |window| {
+        Ok(window.raw_display_handle())
+    })
+        .into_raw()
 }
 
 /// Request the window to redraw. Can be called from any thread.

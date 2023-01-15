@@ -1,5 +1,5 @@
 use geometry_box::{PointBox, SizeBox, U128Box};
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle};
 use string_box::StringBox;
 use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
@@ -54,10 +54,17 @@ pub extern "C" fn winit_create_window(
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #[no_mangle]
-pub extern "C" fn winit_windowed_context_raw_window_handle(
+pub extern "C" fn winit_window_raw_window_handle(
     window: *mut ValueBox<Window>,
 ) -> *mut ValueBox<RawWindowHandle> {
     window.with_ref(Window::raw_window_handle).into_raw()
+}
+
+#[no_mangle]
+pub extern "C" fn winit_window_raw_display_handle(
+    window: *mut ValueBox<Window>,
+) -> *mut ValueBox<RawDisplayHandle> {
+    window.with_ref(Window::raw_display_handle).into_raw()
 }
 
 #[no_mangle]

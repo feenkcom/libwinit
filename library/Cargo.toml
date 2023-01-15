@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 winit = { git = "https://github.com/syrel/winit", rev = "cb781eb33456c5e3fc69f9b00aeb5a053dfcd623" }
-raw-window-handle = "0.4"
+raw-window-handle = "0.5"
 value-box = "1.1"
 geometry-box = "1.0"
 string-box = "1.1"
