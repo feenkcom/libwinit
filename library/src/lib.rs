@@ -14,15 +14,25 @@ pub use ffi::*;
 pub use polling_event_loop::*;
 pub use window_ref::WindowRef;
 
-pub mod enums;
-pub mod event_loop;
-pub mod events;
-pub mod window;
-pub mod window_builder;
-
+mod enums;
 mod error;
+mod event_loop;
+#[cfg(any(
+target_os = "windows",
+target_os = "macos",
+target_os = "android",
+target_os = "linux",
+target_os = "dragonfly",
+target_os = "freebsd",
+target_os = "netbsd",
+target_os = "openbsd"
+))]
+mod event_loop_run_return;
+mod events;
 mod ffi;
 mod polling_event_loop;
+mod window;
+mod window_builder;
 mod window_ref;
 
 ///////////////////////////////////////////////////////////////////////////////////////

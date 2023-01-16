@@ -20,6 +20,9 @@ use crate::{winit_convert_window_id, Result, WindowRef, WinitError, WinitUserEve
 pub type WinitEventLoop = EventLoop<WinitUserEvent>;
 pub type WinitEventLoopProxy = EventLoopProxy<WinitUserEvent>;
 
+#[cfg(target_os = "ios")]
+use winit::platform::ios::WindowBuilderExtIOS;
+
 #[derive(Debug)]
 pub struct SemaphoreSignaller {
     semaphore_callback: unsafe extern "C" fn(usize, *const c_void),
@@ -264,7 +267,20 @@ impl PollingEventLoop {
     pub fn create_window(&mut self, window_builder: WindowBuilder) -> Result<WindowRef> {
         self.event_loop()
             .ok_or(WinitError::EventLoopNotRunning)
-            .and_then(|event_loop| window_builder.build(event_loop).map_err(|err| err.into()))
+            .and_then(|event_loop| {
+                (if let Some(_monitor) = event_loop.primary_monitor() {
+                    #[cfg(target_os = "ios")]
+                    {
+                        window_builder
+                            .with_inner_size(_monitor.size())
+                            .with_scale_factor(_monitor.scale_factor())
+                    }
+                    #[cfg(not(target_os = "ios"))]
+                    { window_builder }
+                } else {
+                    window_builder
+                }).build(event_loop).map_err(|err| err.into())
+            })
             .and_then(|window| {
                 let window_id = window.id();
                 let window_ref = WindowRef::new(&window_id);

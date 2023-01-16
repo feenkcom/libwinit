@@ -7,6 +7,8 @@ use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowExtMacOS;
+#[cfg(target_os = "ios")]
+use winit::platform::ios::WindowExtIOS;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
 use winit::window::{Window, WindowId};
@@ -253,6 +255,18 @@ pub extern "C" fn winit_window_ref_get_ns_view(
         Ok(window.ns_view() as cocoa::base::id)
     })
     .or_log(cocoa::base::nil)
+}
+
+#[cfg(target_os = "ios")]
+#[no_mangle]
+pub extern "C" fn winit_window_ref_get_ns_view(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    window_ref: *mut ValueBox<WindowRef>,
+) -> *mut std::ffi::c_void {
+    with_window(event_loop, window_ref, |window| {
+        Ok(window.ui_view())
+    })
+        .or_log(std::ptr::null_mut())
 }
 
 #[cfg(target_os = "windows")]
