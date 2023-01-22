@@ -3,6 +3,7 @@ use std::error::Error;
 use std::sync::PoisonError;
 use thiserror::Error;
 use value_box::BoxerError;
+use winit::error::NotSupportedError;
 use winit::event_loop::EventLoopClosed;
 use winit::window::WindowId;
 
@@ -18,6 +19,8 @@ pub enum WinitError {
     WindowNotFound(WindowId),
     #[error("Event loop closed")]
     EventLoopClosed(#[from] EventLoopClosed<WinitUserEvent>),
+    #[error("Not supported error")]
+    NotSupportedError(#[from] NotSupportedError),
     #[error("Boxer error")]
     BoxerError(#[from] BoxerError),
 }

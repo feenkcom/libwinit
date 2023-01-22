@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 #[macro_use]
 extern crate log;
 
@@ -5,7 +7,7 @@ use std::mem::transmute_copy;
 
 use geometry_box::U128Box;
 use string_box::StringBox;
-use value_box::{ValueBox, ValueBoxPointer};
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::window::WindowId;
 
 pub use enums::{WinitCursorIcon, WinitUserEvent};
@@ -18,14 +20,14 @@ mod enums;
 mod error;
 mod event_loop;
 #[cfg(any(
-target_os = "windows",
-target_os = "macos",
-target_os = "android",
-target_os = "linux",
-target_os = "dragonfly",
-target_os = "freebsd",
-target_os = "netbsd",
-target_os = "openbsd"
+    target_os = "windows",
+    target_os = "macos",
+    target_os = "android",
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd"
 ))]
 mod event_loop_run_return;
 mod events;
@@ -50,13 +52,17 @@ pub extern "C" fn winit_init_logger() {
 }
 
 #[no_mangle]
-pub extern "C" fn winit_println(_ptr_message: *mut ValueBox<StringBox>) {
-    _ptr_message.with_not_null(|message| println!("{}", message.to_string()));
+pub extern "C" fn winit_println(message: *mut ValueBox<StringBox>) {
+    message
+        .with_ref(|message| println!("{}", message.to_string()))
+        .log();
 }
 
 #[no_mangle]
-pub extern "C" fn winit_print(_ptr_message: *mut ValueBox<StringBox>) {
-    _ptr_message.with_not_null(|message| print!("{}", message.to_string()));
+pub extern "C" fn winit_print(message: *mut ValueBox<StringBox>) {
+    message
+        .with_ref(|message| print!("{}", message.to_string()))
+        .log();
 }
 
 pub fn winit_convert_window_id(window_id: WindowId) -> U128Box {

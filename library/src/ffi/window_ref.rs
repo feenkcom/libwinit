@@ -1,14 +1,16 @@
 use std::ops::DerefMut;
 
 use geometry_box::{PointBox, SizeBox, U128Box};
-use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle};
+use raw_window_handle::{
+    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
+};
 use string_box::StringBox;
 use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
-#[cfg(target_os = "macos")]
-use winit::platform::macos::WindowExtMacOS;
 #[cfg(target_os = "ios")]
 use winit::platform::ios::WindowExtIOS;
+#[cfg(target_os = "macos")]
+use winit::platform::macos::WindowExtMacOS;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
 use winit::window::{Window, WindowId};
@@ -71,7 +73,7 @@ pub extern "C" fn winit_window_ref_raw_display_handle(
     with_window(event_loop, window_ref, |window| {
         Ok(window.raw_display_handle())
     })
-        .into_raw()
+    .into_raw()
 }
 
 /// Request the window to redraw. Can be called from any thread.
@@ -263,10 +265,7 @@ pub extern "C" fn winit_window_ref_get_ns_view(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut std::ffi::c_void {
-    with_window(event_loop, window_ref, |window| {
-        Ok(window.ui_view())
-    })
-        .or_log(std::ptr::null_mut())
+    with_window(event_loop, window_ref, |window| Ok(window.ui_view())).or_log(std::ptr::null_mut())
 }
 
 #[cfg(target_os = "windows")]

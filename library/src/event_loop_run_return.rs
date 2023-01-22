@@ -5,47 +5,43 @@ use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::event_loop::{ControlFlow, EventLoopWindowTarget};
 use winit::platform::run_return::EventLoopExtRunReturn;
 
-use crate::{WinitEventLoop, WinitUserEvent};
 use crate::events::{EventProcessor, WinitControlFlow, WinitEvent};
+use crate::{WinitEventLoop, WinitUserEvent};
 
 #[no_mangle]
 pub extern "C" fn winit_event_loop_run_return(
-    event_loop_ptr: *mut ValueBox<WinitEventLoop>,
+    event_loop: *mut ValueBox<WinitEventLoop>,
     callback: extern "C" fn(*mut WinitEvent) -> WinitControlFlow,
 ) {
-    if event_loop_ptr.is_null() {
-        eprintln!("[winit_events_loop_run_return] _ptr_events_loop is null");
-        return;
-    }
+    event_loop
+        .with_mut(|event_loop| {
+            let mut event_processor = EventProcessor::new();
+            event_loop.run_return(
+                |event,
+                 _events_loop: &EventLoopWindowTarget<WinitUserEvent>,
+                 control_flow: &mut ControlFlow| {
+                    *control_flow = ControlFlow::Poll;
 
-    let mut event_processor = EventProcessor::new();
-
-    event_loop_ptr.with_not_null(|event_loop| {
-        event_loop.run_return(
-            |event,
-             _events_loop: &EventLoopWindowTarget<WinitUserEvent>,
-             control_flow: &mut ControlFlow| {
-                *control_flow = ControlFlow::Poll;
-
-                let mut c_event: WinitEvent = Default::default();
-                let processed = event_processor.process(event, &mut c_event);
-                if processed {
-                    let c_event_ptr = Box::into_raw(Box::new(c_event));
-                    let c_control_flow = callback(c_event_ptr);
-                    unsafe { Box::from_raw(c_event_ptr) };
-                    match c_control_flow {
-                        WinitControlFlow::Poll => *control_flow = ControlFlow::Poll,
-                        WinitControlFlow::Wait => {
-                            *control_flow = ControlFlow::WaitUntil(
-                                Instant::now() + Duration::new(0, 50 * 1000000),
-                            )
+                    let mut c_event: WinitEvent = Default::default();
+                    let processed = event_processor.process(event, &mut c_event);
+                    if processed {
+                        let c_event_ptr = Box::into_raw(Box::new(c_event));
+                        let c_control_flow = callback(c_event_ptr);
+                        unsafe { Box::from_raw(c_event_ptr) };
+                        match c_control_flow {
+                            WinitControlFlow::Poll => *control_flow = ControlFlow::Poll,
+                            WinitControlFlow::Wait => {
+                                *control_flow = ControlFlow::WaitUntil(
+                                    Instant::now() + Duration::new(0, 50 * 1000000),
+                                )
+                            }
+                            WinitControlFlow::Exit => *control_flow = ControlFlow::Exit,
                         }
-                        WinitControlFlow::Exit => *control_flow = ControlFlow::Exit,
                     }
-                }
-            },
-        );
-    });
+                },
+            );
+        })
+        .log();
 }
 
 /// Initializes the winit event loop.

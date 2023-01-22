@@ -276,10 +276,14 @@ impl PollingEventLoop {
                             .with_scale_factor(_monitor.scale_factor())
                     }
                     #[cfg(not(target_os = "ios"))]
-                    { window_builder }
+                    {
+                        window_builder
+                    }
                 } else {
                     window_builder
-                }).build(event_loop).map_err(|err| err.into())
+                })
+                .build(event_loop)
+                .map_err(|err| err.into())
             })
             .and_then(|window| {
                 let window_id = window.id();

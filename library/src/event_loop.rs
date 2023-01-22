@@ -1,13 +1,7 @@
-use std::os::raw::c_void;
-use std::time;
-
-use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
-use winit::event_loop::{
-    ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget,
-};
+use value_box::{BoxerError, ReturnBoxerResult, ValueBox, ValueBoxPointer};
+use winit::event_loop::{EventLoop, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget};
 use winit::monitor::MonitorHandle;
 
-use crate::events::{EventProcessor, WinitControlFlow, WinitEvent};
 use crate::WinitUserEvent;
 
 pub type WinitEventLoop = EventLoop<WinitUserEvent>;
@@ -80,20 +74,20 @@ pub fn get_event_loop_type(
 
 #[no_mangle]
 pub extern "C" fn winit_event_loop_get_type(
-    _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
+    event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> WinitEventLoopType {
-    _ptr_event_loop.with_not_null_return(WinitEventLoopType::Unknown, |event_loop| {
-        get_event_loop_type(event_loop)
-    })
+    event_loop
+        .with_ref(|event_loop| get_event_loop_type(event_loop))
+        .or_log(WinitEventLoopType::Unknown)
 }
 
 #[no_mangle]
 pub extern "C" fn winit_event_loop_create_proxy(
-    _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
+    event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopProxy> {
-    _ptr_event_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
-        ValueBox::new(event_loop.create_proxy()).into_raw()
-    })
+    event_loop
+        .with_ref(|event_loop| event_loop.create_proxy())
+        .into_raw()
 }
 
 #[no_mangle]
@@ -109,21 +103,25 @@ pub extern "C" fn winit_event_loop_drop_proxy(
 
 #[no_mangle]
 pub extern "C" fn winit_event_loop_get_primary_monitor(
-    _ptr_event_loop: *mut ValueBox<WinitEventLoop>,
+    event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<MonitorHandle> {
-    _ptr_event_loop.with_not_null_return(std::ptr::null_mut(), |event_loop| {
-        match event_loop.primary_monitor() {
-            None => std::ptr::null_mut(),
-            Some(monitor) => ValueBox::new(monitor).into_raw(),
-        }
-    })
+    event_loop
+        .to_ref()
+        .and_then(|event_loop| {
+            event_loop.primary_monitor().ok_or_else(|| {
+                BoxerError::AnyError("There is no monitor, or it is not supported".into())
+            })
+        })
+        .into_raw()
 }
 
 #[no_mangle]
 pub extern "C" fn winit_primary_monitor_get_hidpi_factor(
-    monitor_id_ptr: *mut ValueBox<MonitorHandle>,
+    monitor_handle: *mut ValueBox<MonitorHandle>,
 ) -> f64 {
-    monitor_id_ptr.with_not_null_return(1.0, |monitor_id| monitor_id.scale_factor())
+    monitor_handle
+        .with_ref(|monitor_handle| monitor_handle.scale_factor())
+        .or_log(1.0)
 }
 
 #[no_mangle]

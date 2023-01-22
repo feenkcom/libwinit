@@ -52,13 +52,13 @@ pub extern "C" fn winit_polling_event_loop_new() -> *mut ValueBox<PollingEventLo
 
 #[no_mangle]
 pub extern "C" fn winit_polling_event_loop_wake(
-    events_loop: *mut ValueBox<PollingEventLoop>,
+    event_loop: *mut ValueBox<PollingEventLoop>,
     event: WinitUserEvent,
 ) -> bool {
-    events_loop.with_not_null_return(false, |event_loop| match event_loop.wake(event) {
-        Ok(_) => true,
-        Err(_) => false,
-    })
+    event_loop
+        .with_ref(|event_loop| event_loop.wake(event))
+        .map(|_| true)
+        .or_log(false)
 }
 
 #[no_mangle]
@@ -69,7 +69,7 @@ pub extern "C" fn winit_polling_event_loop_create_window(
     event_loop
         .to_ref()
         .and_then(|mut event_loop| {
-            window_builder.to_value().and_then(|window_builder| {
+            window_builder.take_value().and_then(|window_builder| {
                 event_loop
                     .create_window(window_builder)
                     .map_err(|err| err.boxed().into())
@@ -155,25 +155,27 @@ pub extern "C" fn winit_polling_event_loop_count_redraw_listeners(
 
 #[no_mangle]
 pub extern "C" fn winit_polling_event_loop_poll(
-    _ptr: *mut ValueBox<PollingEventLoop>,
+    event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> *mut ValueBox<WinitEvent> {
-    _ptr.with_not_null_return(std::ptr::null_mut(), |event_loop| match event_loop.poll() {
-        None => std::ptr::null_mut(),
-        Some(event) => ValueBox::new(event).into_raw(),
-    })
+    event_loop
+        .with_mut(|event_loop| event_loop.poll())
+        .map(|event| {
+            event
+                .map(|event| ValueBox::new(event).into_raw())
+                .unwrap_or(std::ptr::null_mut())
+        })
+        .or_log(std::ptr::null_mut())
 }
 
 #[no_mangle]
-pub extern "C" fn winit_polling_event_loop_run(_ptr_event_loop: *mut ValueBox<PollingEventLoop>) {
-    if _ptr_event_loop.is_null() {
-        eprintln!("[winit_polling_event_loop_run_return] _ptr_event_loop is null");
-        return;
-    }
-
-    _ptr_event_loop.with_not_null(|polling_event_loop| {
-        let event_loop: &'static mut PollingEventLoop = unsafe { transmute(polling_event_loop) };
-        event_loop.run();
-    });
+pub extern "C" fn winit_polling_event_loop_run(event_loop: *mut ValueBox<PollingEventLoop>) {
+    event_loop
+        .with_mut(|polling_event_loop| {
+            let event_loop: &'static mut PollingEventLoop =
+                unsafe { transmute(polling_event_loop) };
+            event_loop.run();
+        })
+        .log();
 }
 
 /// Must be called from the inside of the `run` method of the [`PollingEventLoop`].
