@@ -7,7 +7,7 @@ use winit::window::WindowBuilder;
 
 #[no_mangle]
 pub extern "C" fn winit_window_builder_new() -> *mut ValueBox<WindowBuilder> {
-    ValueBox::new(WindowBuilder::new()).into_raw()
+    value_box!(WindowBuilder::new()).into_raw()
 }
 
 #[no_mangle]
@@ -21,8 +21,7 @@ pub extern "C" fn winit_window_builder_with_title(
     window_title: *mut ValueBox<StringBox>,
 ) {
     window_title
-        .to_ref()
-        .and_then(|window_title| {
+        .with_ref_ok(|window_title| {
             window_builder
                 .replace_value(|window_builder| window_builder.with_title(window_title.to_string()))
         })

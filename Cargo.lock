@@ -533,7 +533,7 @@ dependencies = [
 
 [[package]]
 name = "libwinit"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "cocoa",
  "env_logger",
@@ -844,9 +844,9 @@ checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
 
 [[package]]
 name = "phlow"
-version = "1.2.2"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "294e3a37e925d184da19268118db80ce309c50fc38a1f642eb3277c4155a7968"
+checksum = "8528d5fc04783f3d58d2e50284dfdc6855f311bf1ee17acf1af92af2d2c3e5c6"
 dependencies = [
  "log",
  "phlow-derive",
@@ -854,9 +854,9 @@ dependencies = [
 
 [[package]]
 name = "phlow-derive"
-version = "1.2.2"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b50dec196f0e5dd521b4caae082b379b596c0dd4e15c94fe876f2770280725b"
+checksum = "69b22887b0dff93c616ae0b30033b093742f8f1b729ac8774ab59b1afc182fe8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -866,9 +866,9 @@ dependencies = [
 
 [[package]]
 name = "phlow-extensions"
-version = "1.2.2"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4239b23b1097cba15be5f73996ca9daf1ca9504c6ad4386a5600c0364a16c20"
+checksum = "99ec726099ce4fe48596cca5a7f7e0ea262f383f1b2c22f0bf17b963f51b86c8"
 dependencies = [
  "phlow",
 ]
@@ -1340,11 +1340,12 @@ checksum = "07a91d0648d862a02d641c82292791accfe66d36df75d8149ebc9768f2e36863"
 
 [[package]]
 name = "value-box"
-version = "1.1.3"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53b7029b757065f66bf777eaebaf166f589e74bd2ae45995f7274da35f7f6529"
+checksum = "3860559aa430557aa16165cf48f4c12ce5fbf2b3f36a38b92392a36886aca3db"
 dependencies = [
  "log",
+ "phlow",
  "thiserror",
  "user-error",
 ]

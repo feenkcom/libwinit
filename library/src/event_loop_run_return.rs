@@ -14,7 +14,7 @@ pub extern "C" fn winit_event_loop_run_return(
     callback: extern "C" fn(*mut WinitEvent) -> WinitControlFlow,
 ) {
     event_loop
-        .with_mut(|event_loop| {
+        .with_mut_ok(|event_loop| {
             let mut event_processor = EventProcessor::new();
             event_loop.run_return(
                 |event,
@@ -54,7 +54,7 @@ pub extern "C" fn winit_event_loop_run_return_data(
     callback: extern "C" fn(*mut c_void, *mut WinitEvent) -> WinitControlFlow,
 ) {
     event_loop
-        .with_mut(|event_loop| {
+        .with_mut_ok(|event_loop| {
             let mut event_processor = EventProcessor::new();
             event_loop.run_return(
                 |event,

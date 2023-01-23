@@ -77,7 +77,7 @@ pub extern "C" fn winit_event_loop_get_type(
     event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> WinitEventLoopType {
     event_loop
-        .with_ref(|event_loop| get_event_loop_type(event_loop))
+        .with_ref_ok(|event_loop| get_event_loop_type(event_loop))
         .or_log(WinitEventLoopType::Unknown)
 }
 
@@ -86,7 +86,7 @@ pub extern "C" fn winit_event_loop_create_proxy(
     event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopProxy> {
     event_loop
-        .with_ref(|event_loop| event_loop.create_proxy())
+        .with_ref_ok(|event_loop| event_loop.create_proxy())
         .into_raw()
 }
 
@@ -106,8 +106,7 @@ pub extern "C" fn winit_event_loop_get_primary_monitor(
     event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<MonitorHandle> {
     event_loop
-        .to_ref()
-        .and_then(|event_loop| {
+        .with_ref(|event_loop| {
             event_loop.primary_monitor().ok_or_else(|| {
                 BoxerError::AnyError("There is no monitor, or it is not supported".into())
             })
@@ -120,7 +119,7 @@ pub extern "C" fn winit_primary_monitor_get_hidpi_factor(
     monitor_handle: *mut ValueBox<MonitorHandle>,
 ) -> f64 {
     monitor_handle
-        .with_ref(|monitor_handle| monitor_handle.scale_factor())
+        .with_ref_ok(|monitor_handle| monitor_handle.scale_factor())
         .or_log(1.0)
 }
 

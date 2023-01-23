@@ -1,5 +1,3 @@
-use std::ops::DerefMut;
-
 use geometry_box::{PointBox, SizeBox, U128Box};
 use raw_window_handle::{
     HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
@@ -18,13 +16,13 @@ use winit::window::{Window, WindowId};
 use crate::enums::WinitCursorIcon;
 use crate::{winit_convert_window_id, PollingEventLoop, WindowRef};
 
-fn with_window<T>(
+fn with_window<T: 'static>(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
     callback: impl FnOnce(&Window) -> Result<T>,
 ) -> Result<T> {
-    event_loop.to_ref().and_then(|event_loop| {
-        window_ref.to_ref().and_then(|window_ref| {
+    event_loop.with_ref(|event_loop| {
+        window_ref.with_ref(|window_ref| {
             event_loop
                 .with_window(&window_ref.id(), |window| {
                     callback(window).map_err(|error| error.into())
@@ -34,16 +32,16 @@ fn with_window<T>(
     })
 }
 
-fn with_window_mut<T>(
+fn with_window_mut<T: 'static>(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
     callback: impl FnOnce(&mut Window, &mut WindowRef) -> Result<T>,
 ) -> Result<T> {
-    event_loop.to_ref().and_then(|mut event_loop| {
-        window_ref.to_ref().and_then(|mut window_ref| {
+    event_loop.with_mut(|event_loop| {
+        window_ref.with_mut(|window_ref| {
             event_loop
                 .with_window_mut(&window_ref.id(), |window, _| {
-                    callback(window, window_ref.deref_mut()).map_err(|error| error.into())
+                    callback(window, window_ref).map_err(|error| error.into())
                 })
                 .map_err(|err| err.boxed().into())
         })
@@ -89,8 +87,7 @@ pub extern "C" fn winit_window_ref_request_redraw(
 #[no_mangle]
 pub extern "C" fn winit_window_ref_get_scale_factor(window_ref: *mut ValueBox<WindowRef>) -> f64 {
     window_ref
-        .to_ref()
-        .and_then(|window_ref| window_ref.scale_factor().map_err(|err| err.boxed().into()))
+        .with_ref(|window_ref| window_ref.scale_factor().map_err(|err| err.boxed().into()))
         .or_log(1.0)
 }
 
@@ -101,9 +98,8 @@ pub extern "C" fn winit_window_ref_get_inner_size(
     inner_size: *mut ValueBox<SizeBox<u32>>,
 ) {
     window_ref
-        .to_ref()
-        .and_then(|window_ref| {
-            inner_size.to_ref().and_then(|mut inner_size| {
+        .with_ref(|window_ref| {
+            inner_size.with_mut(|inner_size| {
                 window_ref
                     .inner_size()
                     .map_err(|err| err.boxed().into())
@@ -143,9 +139,8 @@ pub extern "C" fn winit_window_ref_get_position(
     position: *mut ValueBox<PointBox<i32>>,
 ) {
     window_ref
-        .to_ref()
-        .and_then(|window_ref| {
-            position.to_ref().and_then(|mut position| {
+        .with_ref(|window_ref| {
+            position.with_mut(|position| {
                 window_ref
                     .outer_position()
                     .map_err(|err| err.boxed().into())
@@ -184,9 +179,8 @@ pub extern "C" fn winit_window_ref_get_id(
     id: *mut ValueBox<U128Box>,
 ) {
     window_ref
-        .to_ref()
-        .and_then(|window_ref| {
-            id.to_ref().and_then(|mut id| {
+        .with_ref(|window_ref| {
+            id.with_mut(|id| {
                 let window_id: U128Box = winit_convert_window_id(window_ref.id().clone());
                 id.low = window_id.low;
                 id.high = window_id.high;
@@ -201,8 +195,7 @@ pub extern "C" fn winit_window_ref_get_raw_id(
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut ValueBox<WindowId> {
     window_ref
-        .to_ref()
-        .and_then(|window_ref| Ok(window_ref.id()))
+        .with_ref_ok(|window_ref| window_ref.id())
         .into_raw()
 }
 
@@ -213,7 +206,7 @@ pub extern "C" fn winit_window_ref_set_title(
     title: *mut ValueBox<StringBox>,
 ) {
     with_window_mut(event_loop, window_ref, |window, _window_ref| {
-        title.to_ref().and_then(|title| {
+        title.with_ref(|title| {
             window.set_title(title.to_string().as_ref());
             Ok(())
         })
@@ -286,9 +279,8 @@ pub extern "C" fn winit_window_ref_destroy(
     window_ref: *mut ValueBox<WindowRef>,
 ) {
     event_loop
-        .to_ref()
-        .and_then(|mut event_loop| {
-            window_ref.to_ref().and_then(|window_ref| {
+        .with_mut(|event_loop| {
+            window_ref.with_ref(|window_ref| {
                 event_loop
                     .destroy_window(&window_ref.id())
                     .map_err(|error| error.boxed().into())

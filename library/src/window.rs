@@ -22,8 +22,7 @@ pub extern "C" fn winit_create_window(
     window_builder: *mut ValueBox<WindowBuilder>,
 ) -> *mut ValueBox<Window> {
     event_loop
-        .to_ref()
-        .and_then(|event_loop| {
+        .with_ref(|event_loop| {
             window_builder.take_value().and_then(|window_builder| {
                 debug!("Window builder: {:?}", &window_builder);
                 window_builder
@@ -42,24 +41,24 @@ pub extern "C" fn winit_create_window(
 pub extern "C" fn winit_window_raw_window_handle(
     window: *mut ValueBox<Window>,
 ) -> *mut ValueBox<RawWindowHandle> {
-    window.with_ref(Window::raw_window_handle).into_raw()
+    window.with_ref_ok(Window::raw_window_handle).into_raw()
 }
 
 #[no_mangle]
 pub extern "C" fn winit_window_raw_display_handle(
     window: *mut ValueBox<Window>,
 ) -> *mut ValueBox<RawDisplayHandle> {
-    window.with_ref(Window::raw_display_handle).into_raw()
+    window.with_ref_ok(Window::raw_display_handle).into_raw()
 }
 
 #[no_mangle]
 pub extern "C" fn winit_window_request_redraw(window: *mut ValueBox<Window>) {
-    window.with_ref(Window::request_redraw).log();
+    window.with_ref_ok(Window::request_redraw).log();
 }
 
 #[no_mangle]
 pub extern "C" fn winit_window_get_scale_factor(window: *mut ValueBox<Window>) -> f64 {
-    window.with_ref(Window::scale_factor).or_log(1.0)
+    window.with_ref_ok(Window::scale_factor).or_log(1.0)
 }
 
 #[no_mangle]
@@ -68,9 +67,8 @@ pub extern "C" fn winit_window_get_inner_size(
     size: *mut ValueBox<SizeBox<u32>>,
 ) {
     window
-        .to_ref()
-        .and_then(|window| {
-            size.with_mut(|size| {
+        .with_ref(|window| {
+            size.with_mut_ok(|size| {
                 let window_size: PhysicalSize<u32> = window.inner_size();
                 size.width = window_size.width;
                 size.height = window_size.height;
@@ -86,7 +84,7 @@ pub extern "C" fn winit_window_set_inner_size(
     height: u32,
 ) {
     window
-        .with_ref(|window| window.set_inner_size(PhysicalSize::new(width, height)))
+        .with_ref_ok(|window| window.set_inner_size(PhysicalSize::new(width, height)))
         .log();
 }
 
@@ -96,9 +94,8 @@ pub extern "C" fn winit_window_get_position(
     position: *mut ValueBox<PointBox<i32>>,
 ) {
     window
-        .to_ref()
-        .and_then(|window| {
-            position.to_ref().and_then(|mut position| {
+        .with_ref(|window| {
+            position.with_mut(|position| {
                 window
                     .outer_position()
                     .map_err(|error| Into::<WinitError>::into(error).into())
@@ -114,7 +111,7 @@ pub extern "C" fn winit_window_get_position(
 #[no_mangle]
 pub extern "C" fn winit_window_set_position(window: *mut ValueBox<Window>, x: i32, y: i32) {
     window
-        .with_ref(|window| window.set_outer_position(PhysicalPosition::new(x, y)))
+        .with_ref_ok(|window| window.set_outer_position(PhysicalPosition::new(x, y)))
         .log();
 }
 
@@ -124,9 +121,8 @@ pub extern "C" fn winit_window_get_id(
     window_id: *mut ValueBox<U128Box>,
 ) {
     window
-        .to_ref()
-        .and_then(|window| {
-            window_id.with_mut(|window_id| {
+        .with_ref(|window| {
+            window_id.with_mut_ok(|window_id| {
                 let id: U128Box = winit_convert_window_id(window.id());
                 window_id.low = id.low;
                 window_id.high = id.high
@@ -141,8 +137,8 @@ pub extern "C" fn winit_window_set_title(
     window_title: *mut ValueBox<StringBox>,
 ) {
     window
-        .with_ref_ref(window_title, |window, window_title| {
-            window.set_title(window_title.as_str())
+        .with_ref(|window| {
+            window_title.with_ref_ok(|window_title| window.set_title(window_title.as_str()))
         })
         .log();
 }
@@ -153,14 +149,14 @@ pub extern "C" fn winit_window_set_cursor_icon(
     cursor_icon: WinitCursorIcon,
 ) {
     window
-        .with_ref(|window| window.set_cursor_icon(cursor_icon.into()))
+        .with_ref_ok(|window| window.set_cursor_icon(cursor_icon.into()))
         .log();
 }
 
 #[no_mangle]
 pub extern "C" fn winit_window_set_maximized(window: *mut ValueBox<Window>, maximized: bool) {
     window
-        .with_ref(|window| window.set_maximized(maximized))
+        .with_ref_ok(|window| window.set_maximized(maximized))
         .log();
 }
 
@@ -169,16 +165,16 @@ pub extern "C" fn winit_window_set_maximized(window: *mut ValueBox<Window>, maxi
 pub extern "C" fn winit_window_get_hwnd(
     window_ptr: *mut ValueBox<Window>,
 ) -> *mut std::ffi::c_void {
-    window_ptr.with_not_null_return(std::ptr::null_mut(), |window| unsafe {
-        std::mem::transmute(window.hwnd())
-    })
+    window_ptr
+        .with_ref_ok(|window| unsafe { std::mem::transmute(window.hwnd()) })
+        .or_log(std::ptr::null_mut())
 }
 
 #[cfg(target_os = "macos")]
 #[no_mangle]
 pub extern "C" fn winit_window_get_ns_view(window_ptr: *mut ValueBox<Window>) -> cocoa::base::id {
     window_ptr
-        .with_ref(|window| window.ns_view() as cocoa::base::id)
+        .with_ref_ok(|window| window.ns_view() as cocoa::base::id)
         .or_log(cocoa::base::nil)
 }
 

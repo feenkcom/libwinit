@@ -3,6 +3,14 @@
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate value_box;
+#[cfg(feature = "phlow")]
+#[macro_use]
+extern crate phlow_core as phlow;
+#[cfg(feature = "phlow")]
+extern crate phlow_extensions;
+
 use std::mem::transmute_copy;
 
 use geometry_box::U128Box;
@@ -37,6 +45,11 @@ mod window;
 mod window_builder;
 mod window_ref;
 
+#[cfg(feature = "phlow")]
+use phlow_extensions::CoreExtensions;
+#[cfg(feature = "phlow")]
+import_extensions!(CoreExtensions);
+
 ///////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// L I B R A R Y /////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -54,14 +67,14 @@ pub extern "C" fn winit_init_logger() {
 #[no_mangle]
 pub extern "C" fn winit_println(message: *mut ValueBox<StringBox>) {
     message
-        .with_ref(|message| println!("{}", message.to_string()))
+        .with_ref_ok(|message| println!("{}", message.to_string()))
         .log();
 }
 
 #[no_mangle]
 pub extern "C" fn winit_print(message: *mut ValueBox<StringBox>) {
     message
-        .with_ref(|message| print!("{}", message.to_string()))
+        .with_ref_ok(|message| print!("{}", message.to_string()))
         .log();
 }
 

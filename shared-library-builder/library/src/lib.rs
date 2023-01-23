@@ -6,6 +6,7 @@ pub fn libwinit(version: Option<impl Into<String>>) -> RustLibrary {
         LibraryLocation::Git(GitLocation::github("feenkcom", "libwinit").tag_or_latest(version)),
     )
     .package("libwinit")
+    .feature("phlow")
 }
 
 pub fn latest_libwinit() -> RustLibrary {

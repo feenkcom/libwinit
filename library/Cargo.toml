@@ -1,27 +1,27 @@
 [package]
 name = "libwinit"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Aliaksei Syrel <alex.syrel@gmail.com>"]
 edition = "2021"
 
 [dependencies]
 winit = { git = "https://github.com/syrel/winit", rev = "cb781eb33456c5e3fc69f9b00aeb5a053dfcd623" }
 raw-window-handle = "0.5"
-value-box = "1.1"
+value-box = "2.1"
 geometry-box = "1.0"
 string-box = "1.1"
 log = "0.4"
 env_logger = "0.8"
 thiserror = "1.0"
 parking_lot = "0.12"
-phlow-core = { package = "phlow", version = "1.2.2", optional = true, features = [ "phlow-derive" ] }
-phlow-extensions = { version = "1.2.2", optional = true }
+phlow-core = { package = "phlow", version = "1.3", optional = true, features = [ "phlow-derive" ] }
+phlow-extensions = { version = "1.3", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 cocoa = "0.24"
 
 [features]
-phlow = [ "phlow-core", "phlow-extensions" ]
+phlow = [ "phlow-core", "phlow-extensions", "value-box/phlow" ]
 
 [lib]
 name = "Winit"

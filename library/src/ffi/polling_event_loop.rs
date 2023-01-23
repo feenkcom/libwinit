@@ -16,7 +16,7 @@ use crate::{
 pub extern "C" fn winit_waker_wake(waker: *const c_void, event: WinitUserEvent) -> bool {
     let waker = waker as *mut ValueBox<WinitEventLoopWaker>;
     waker
-        .with_ref(|waker| match waker.wake(event) {
+        .with_ref_ok(|waker| match waker.wake(event) {
             Ok(_) => true,
             Err(_) => false,
         })
@@ -28,7 +28,7 @@ pub extern "C" fn winit_event_loop_waker_create(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopWaker> {
     event_loop
-        .with_ref(|event_loop| event_loop.event_loop_waker.clone())
+        .with_ref_ok(|event_loop| event_loop.event_loop_waker.clone())
         .into_raw()
 }
 
@@ -56,7 +56,7 @@ pub extern "C" fn winit_polling_event_loop_wake(
     event: WinitUserEvent,
 ) -> bool {
     event_loop
-        .with_ref(|event_loop| event_loop.wake(event))
+        .with_ref_ok(|event_loop| event_loop.wake(event))
         .map(|_| true)
         .or_log(false)
 }
@@ -67,8 +67,7 @@ pub extern "C" fn winit_polling_event_loop_create_window(
     window_builder: *mut ValueBox<WindowBuilder>,
 ) -> *mut ValueBox<WindowRef> {
     event_loop
-        .to_ref()
-        .and_then(|mut event_loop| {
+        .with_mut(|event_loop| {
             window_builder.take_value().and_then(|window_builder| {
                 event_loop
                     .create_window(window_builder)
@@ -103,9 +102,8 @@ pub extern "C" fn winit_polling_event_loop_add_resize_listener(
     thunk: *const c_void,
 ) {
     event_loop
-        .to_ref()
-        .and_then(|mut event_loop| {
-            window_id.to_ref().and_then(|window_id| {
+        .with_mut(|event_loop| {
+            window_id.with_ref(|window_id| {
                 Ok(event_loop.add_resize_listener(
                     window_id.deref(),
                     WindowResizedListener::new(callback, thunk),
@@ -120,7 +118,7 @@ pub extern "C" fn winit_polling_event_loop_count_resize_listeners(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> usize {
     event_loop
-        .with_ref(PollingEventLoop::count_resize_listeners)
+        .with_ref_ok(PollingEventLoop::count_resize_listeners)
         .or_log(0)
 }
 
@@ -132,9 +130,8 @@ pub extern "C" fn winit_polling_event_loop_add_redraw_listener(
     thunk: *const c_void,
 ) {
     event_loop
-        .to_ref()
-        .and_then(|mut event_loop| {
-            window_id.to_ref().and_then(|window_id| {
+        .with_mut(|event_loop| {
+            window_id.with_ref(|window_id| {
                 Ok(event_loop.add_redraw_listener(
                     window_id.deref(),
                     WindowRedrawRequestedListener::new(callback, thunk),
@@ -149,7 +146,7 @@ pub extern "C" fn winit_polling_event_loop_count_redraw_listeners(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> usize {
     event_loop
-        .with_ref(PollingEventLoop::count_redraw_listeners)
+        .with_ref_ok(PollingEventLoop::count_redraw_listeners)
         .or_log(0)
 }
 
@@ -158,7 +155,7 @@ pub extern "C" fn winit_polling_event_loop_poll(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> *mut ValueBox<WinitEvent> {
     event_loop
-        .with_mut(|event_loop| event_loop.poll())
+        .with_mut_ok(|event_loop| event_loop.poll())
         .map(|event| {
             event
                 .map(|event| ValueBox::new(event).into_raw())
@@ -170,7 +167,7 @@ pub extern "C" fn winit_polling_event_loop_poll(
 #[no_mangle]
 pub extern "C" fn winit_polling_event_loop_run(event_loop: *mut ValueBox<PollingEventLoop>) {
     event_loop
-        .with_mut(|polling_event_loop| {
+        .with_mut_ok(|polling_event_loop| {
             let event_loop: &'static mut PollingEventLoop =
                 unsafe { transmute(polling_event_loop) };
             event_loop.run();
@@ -184,7 +181,7 @@ pub extern "C" fn winit_polling_event_loop_get_type(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> WinitEventLoopType {
     event_loop
-        .with_ref(|event_loop| {
+        .with_ref_ok(|event_loop| {
             event_loop
                 .event_loop()
                 .map_or(WinitEventLoopType::Unknown, |event_loop| {
