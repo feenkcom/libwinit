@@ -1,8 +1,8 @@
-use value_box::{BoxerError, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::event_loop::{EventLoop, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget};
 use winit::monitor::MonitorHandle;
 
 use crate::WinitUserEvent;
+use value_box::{BoxerError, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 
 pub type WinitEventLoop = EventLoop<WinitUserEvent>;
 pub type WinitEventLoopBuilder = EventLoopBuilder<WinitUserEvent>;

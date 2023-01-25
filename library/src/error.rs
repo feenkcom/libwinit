@@ -1,11 +1,13 @@
-use crate::WinitUserEvent;
 use std::error::Error;
 use std::sync::PoisonError;
+
 use thiserror::Error;
 use value_box::BoxerError;
 use winit::error::NotSupportedError;
 use winit::event_loop::EventLoopClosed;
 use winit::window::WindowId;
+
+use crate::WinitUserEvent;
 
 #[derive(Error, Debug)]
 pub enum WinitError {

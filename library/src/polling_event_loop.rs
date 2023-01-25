@@ -9,6 +9,8 @@ use value_box::{BoxerError, ReturnBoxerResult};
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, Ime, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
+#[cfg(target_os = "ios")]
+use winit::platform::ios::WindowBuilderExtIOS;
 use winit::window::{Window, WindowBuilder, WindowId};
 
 use crate::event_loop::WinitEventLoopBuilder;
@@ -19,9 +21,6 @@ use crate::{winit_convert_window_id, Result, WindowRef, WinitError, WinitUserEve
 
 pub type WinitEventLoop = EventLoop<WinitUserEvent>;
 pub type WinitEventLoopProxy = EventLoopProxy<WinitUserEvent>;
-
-#[cfg(target_os = "ios")]
-use winit::platform::ios::WindowBuilderExtIOS;
 
 #[derive(Debug)]
 pub struct SemaphoreSignaller {

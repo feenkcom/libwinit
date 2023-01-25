@@ -1,13 +1,14 @@
-use string_box::StringBox;
-use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::LogicalSize;
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowBuilderExtMacOS;
 use winit::window::WindowBuilder;
 
+use string_box::StringBox;
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
+
 #[no_mangle]
 pub extern "C" fn winit_window_builder_new() -> *mut ValueBox<WindowBuilder> {
-    value_box!(WindowBuilder::new()).into_raw()
+    ValueBox::new(WindowBuilder::new()).into_raw()
 }
 
 #[no_mangle]

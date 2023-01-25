@@ -1,12 +1,12 @@
 use std::ffi::c_void;
 use std::time::{Duration, Instant};
 
-use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::event_loop::{ControlFlow, EventLoopWindowTarget};
 use winit::platform::run_return::EventLoopExtRunReturn;
 
 use crate::events::{EventProcessor, WinitControlFlow, WinitEvent};
 use crate::{WinitEventLoop, WinitUserEvent};
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 
 #[no_mangle]
 pub extern "C" fn winit_event_loop_run_return(

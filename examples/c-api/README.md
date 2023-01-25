@@ -1,10 +1,5 @@
 # Sample C program using Winit bindings
 
-## Dependencies
-
-`Winit` bindings depend on [libboxer](https://github.com/feenkcom/libboxer) - a library to work with various primitive types such as `ValueBox`, `String`, `Size`, `Point` and others.
-In order to compile this example first generate the `boxer.h` header and compile `libBoxer` library. Place `boxer.h` and `libBoxer.dylib` in the same folder as `winit.h`.
-
 ## Generating `winit.h` header
 
 Make sure to install latest [cbindgen](https://github.com/eqrion/cbindgen):
@@ -32,9 +27,9 @@ cp target/release/libWinit.so examples/c-api/libWinit.so
 cp winit.h examples/c-api/winit.h
 ```
 
-Compile `main.c` linking both `libWinit` and `libBoxer`:
+Compile `main.c` linking `libWinit`:
 ```bash
-gcc main.c -lWinit -lBoxer -L . -o main
+gcc main.c -lWinit -L . -o main
 ```
 
 Run the example:

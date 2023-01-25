@@ -18,7 +18,7 @@ include_version = false
 namespaces = []
 using_namespaces = []
 sys_includes = []
-includes = [ "boxer.h" ]
+includes = [ ]
 no_includes = false
 after_includes = ""
 include_guard = "winit_h"
@@ -57,10 +57,36 @@ renaming_overrides_prefixing = false
 "ValueBox_WinitEventLoop" = "EventLoop"
 "ValueBox_WindowBuilder" = "WindowBuilder"
 "ValueBox_Window" = "Window"
+
 "ValueBox_StringBox" = "StringBox"
+"StringBox" = "String"
+
 "ValueBox_U128Box" = "U128Box"
 "U128Box" = "U128"
-"StringBox" = "String"
+
+"ValueBox_BoxerPointF32" = "PointBoxF32"
+"PointBox_f32" = "PointF32"
+"BoxerPointF32" = "PointF32"
+
+"ValueBox_BoxerSizeU32" = "SizeBoxU32"
+"SizeBox_u32" = "SizeU32"
+"BoxerSizeU32" = "SizeU32"
+
+"ValueBox_BoxerSizeI32" = "SizeBoxI32"
+"SizeBox_i32" = "SizeI32"
+"BoxerSizeI32" = "SizeI32"
+
+"ValueBox_BoxerSizeF32" = "SizeBoxF32"
+"SizeBox_f32" = "SizeF32"
+"BoxerSizeF32" = "SizeF32"
+
+"ValueBox_BoxerSizeU64" = "SizeBoxU64"
+"SizeBox_u64" = "SizeU64"
+"BoxerSizeU64" = "SizeU64"
+
+"ValueBox_BoxerSizeF64" = "SizeBoxF64"
+"SizeBox_f64" = "SizeF64"
+"BoxerSizeF64" = "SizeF64"
 
 [export.body]
 
@@ -119,13 +145,13 @@ bitflags = false
 
 [parse]
 parse_deps = true
-include = [ "winit", "value-box" ]
+include = [ "winit", "value-box", "geometry-box", "string-box", "value-box-ffi" ]
 exclude = []
 clean = false
-extra_bindings = []
+extra_bindings = ["value-box-ffi"]
 
 [parse.expand]
 crates = []
 all_features = false
 default_features = true
-features = []
+features = [ ]

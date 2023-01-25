@@ -1,9 +1,6 @@
-use geometry_box::{PointBox, SizeBox, U128Box};
 use raw_window_handle::{
     HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
 };
-use string_box::StringBox;
-use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "ios")]
 use winit::platform::ios::WindowExtIOS;
@@ -15,6 +12,9 @@ use winit::window::{Window, WindowId};
 
 use crate::enums::WinitCursorIcon;
 use crate::{winit_convert_window_id, PollingEventLoop, WindowRef};
+use geometry_box::{PointBox, SizeBox, U128Box};
+use string_box::StringBox;
+use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 
 fn with_window<T: 'static>(
     event_loop: *mut ValueBox<PollingEventLoop>,

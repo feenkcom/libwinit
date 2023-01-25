@@ -2,20 +2,29 @@
 
 #[macro_use]
 extern crate log;
-
-#[macro_use]
-extern crate value_box;
 #[cfg(feature = "phlow")]
 #[macro_use]
-extern crate phlow_core as phlow;
+extern crate phlow;
 #[cfg(feature = "phlow")]
 extern crate phlow_extensions;
+
+// #[macro_use]
+// extern crate value_box;
 
 use std::mem::transmute_copy;
 
 use geometry_box::U128Box;
+#[cfg(feature = "phlow")]
+use phlow_extensions::CoreExtensions;
+// Re-export everything from the `value_box_ffi` in order to tell Rust to include
+// the corresponding `no_mangle` functions.
+#[cfg(feature = "phlow")]
+pub use phlow_ffi::*;
 use string_box::StringBox;
 use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
+// Re-export everything from the `value_box_ffi` in order to tell Rust to include
+// the corresponding `no_mangle` functions.
+pub use value_box_ffi::*;
 use winit::window::WindowId;
 
 pub use enums::{WinitCursorIcon, WinitUserEvent};
@@ -45,8 +54,6 @@ mod window;
 mod window_builder;
 mod window_ref;
 
-#[cfg(feature = "phlow")]
-use phlow_extensions::CoreExtensions;
 #[cfg(feature = "phlow")]
 import_extensions!(CoreExtensions);
 
