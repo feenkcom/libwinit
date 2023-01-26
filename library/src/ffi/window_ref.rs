@@ -1,6 +1,4 @@
-use raw_window_handle::{
-    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
-};
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "ios")]
 use winit::platform::ios::WindowExtIOS;
@@ -13,6 +11,7 @@ use winit::window::{Window, WindowId};
 use crate::enums::WinitCursorIcon;
 use crate::{winit_convert_window_id, PollingEventLoop, WindowRef};
 use geometry_box::{PointBox, SizeBox, U128Box};
+use raw_window_handle_extensions::{VeryRawDisplayHandle, VeryRawWindowHandle};
 use string_box::StringBox;
 use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 
@@ -54,11 +53,12 @@ fn with_window_mut<T: 'static>(
 pub extern "C" fn winit_window_ref_raw_window_handle(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
-) -> *mut ValueBox<RawWindowHandle> {
+) -> *mut VeryRawWindowHandle {
     with_window(event_loop, window_ref, |window| {
-        Ok(window.raw_window_handle())
+        Ok(VeryRawWindowHandle::from(window.raw_window_handle()))
     })
-    .into_raw()
+    .map(|handle| handle.into())
+    .or_log(std::ptr::null_mut())
 }
 
 /// Return the raw window handle that can be used to create a native rendering context.
@@ -67,11 +67,12 @@ pub extern "C" fn winit_window_ref_raw_window_handle(
 pub extern "C" fn winit_window_ref_raw_display_handle(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
-) -> *mut ValueBox<RawDisplayHandle> {
+) -> *mut VeryRawDisplayHandle {
     with_window(event_loop, window_ref, |window| {
-        Ok(window.raw_display_handle())
+        Ok(VeryRawDisplayHandle::from(window.raw_display_handle()))
     })
-    .into_raw()
+    .map(|handle| handle.into())
+    .or_log(std::ptr::null_mut())
 }
 
 /// Request the window to redraw. Can be called from any thread.

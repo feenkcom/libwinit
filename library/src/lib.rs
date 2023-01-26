@@ -24,6 +24,7 @@ use string_box::StringBox;
 use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 // Re-export everything from the `value_box_ffi` in order to tell Rust to include
 // the corresponding `no_mangle` functions.
+pub use raw_window_handle_extensions::*;
 pub use value_box_ffi::*;
 use winit::window::WindowId;
 

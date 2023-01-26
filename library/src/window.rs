@@ -1,7 +1,6 @@
 use geometry_box::{PointBox, SizeBox, U128Box};
-use raw_window_handle::{
-    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
-};
+use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
+use raw_window_handle_extensions::{VeryRawDisplayHandle, VeryRawWindowHandle};
 use string_box::StringBox;
 use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
@@ -12,9 +11,9 @@ use winit::platform::windows::WindowExtWindows;
 use winit::window::Window;
 use winit::window::WindowBuilder;
 
+use crate::{winit_convert_window_id, WinitError};
 use crate::enums::WinitCursorIcon;
 use crate::event_loop::WinitEventLoop;
-use crate::{winit_convert_window_id, WinitError};
 
 #[no_mangle]
 pub extern "C" fn winit_create_window(
@@ -40,15 +39,21 @@ pub extern "C" fn winit_create_window(
 #[no_mangle]
 pub extern "C" fn winit_window_raw_window_handle(
     window: *mut ValueBox<Window>,
-) -> *mut ValueBox<RawWindowHandle> {
-    window.with_ref_ok(Window::raw_window_handle).into_raw()
+) -> *mut VeryRawWindowHandle {
+    window
+        .with_ref_ok(Window::raw_window_handle)
+        .map(|handle| VeryRawWindowHandle::from(handle).into())
+        .or_log(std::ptr::null_mut())
 }
 
 #[no_mangle]
 pub extern "C" fn winit_window_raw_display_handle(
     window: *mut ValueBox<Window>,
-) -> *mut ValueBox<RawDisplayHandle> {
-    window.with_ref_ok(Window::raw_display_handle).into_raw()
+) -> *mut VeryRawDisplayHandle {
+    window
+        .with_ref_ok(Window::raw_display_handle)
+        .map(|handle| VeryRawDisplayHandle::from(handle).into())
+        .or_log(std::ptr::null_mut())
 }
 
 #[no_mangle]

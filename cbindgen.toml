@@ -58,6 +58,9 @@ renaming_overrides_prefixing = false
 "ValueBox_WindowBuilder" = "WindowBuilder"
 "ValueBox_Window" = "Window"
 
+"VeryRawWindowHandle" = "RawWindowHandle"
+"VeryRawDisplayHandle" = "RawDisplayHandle"
+
 "ValueBox_StringBox" = "StringBox"
 "StringBox" = "String"
 
@@ -145,10 +148,10 @@ bitflags = false
 
 [parse]
 parse_deps = true
-include = [ "winit", "value-box", "geometry-box", "string-box", "value-box-ffi" ]
+include = [ "winit", "value-box", "geometry-box", "string-box", "value-box-ffi", "raw-window-handle-extensions" ]
 exclude = []
 clean = false
-extra_bindings = ["value-box-ffi"]
+extra_bindings = ["value-box-ffi", "raw-window-handle-extensions"]
 
 [parse.expand]
 crates = []
