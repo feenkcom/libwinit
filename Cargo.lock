@@ -1051,9 +1051,9 @@ dependencies = [
 
 [[package]]
 name = "raw-window-handle-extensions"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7da4f277175a086ebdb327a028bc75c996abb0068ca0d52171bce42b32de8f3"
+checksum = "41330b08684fc2cd76421245e314de9a7b13ea70f0234db1dbe4d64d29c9d1ba"
 dependencies = [
  "raw-window-handle 0.5.0",
 ]
