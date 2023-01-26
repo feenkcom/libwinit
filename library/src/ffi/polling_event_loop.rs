@@ -153,12 +153,12 @@ pub extern "C" fn winit_polling_event_loop_count_redraw_listeners(
 #[no_mangle]
 pub extern "C" fn winit_polling_event_loop_poll(
     event_loop: *mut ValueBox<PollingEventLoop>,
-) -> *mut ValueBox<WinitEvent> {
+) -> *mut WinitEvent {
     event_loop
         .with_mut_ok(|event_loop| event_loop.poll())
         .map(|event| {
             event
-                .map(|event| ValueBox::new(event).into_raw())
+                .map(|event| Box::into_raw(Box::new(event)))
                 .unwrap_or(std::ptr::null_mut())
         })
         .or_log(std::ptr::null_mut())

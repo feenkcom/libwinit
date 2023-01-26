@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::mem::transmute;
 
 use geometry_box::U128Box;
-use value_box::{ValueBox, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::event::*;
 use winit::event_loop::ControlFlow;
@@ -654,6 +653,9 @@ pub(crate) fn winit_event_loop_process_received_character(
 }
 
 #[no_mangle]
-pub extern "C" fn winit_event_drop(ptr: *mut ValueBox<WinitEvent>) {
-    ptr.release();
+pub extern "C" fn winit_event_drop(ptr: *mut WinitEvent) {
+    if ptr.is_null() {
+        return;
+    }
+    unsafe { Box::from_raw(ptr) };
 }
