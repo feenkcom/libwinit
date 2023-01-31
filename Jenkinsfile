@@ -59,10 +59,9 @@ pipeline {
                     }
 
                     steps {
-                        sh 'git clean -fdx'
                         sh "cargo run --package ${REPOSITORY_NAME}-builder --bin builder --release"
 
-                        sh "mv target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
+                        sh "mv -f target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
 
                         stash includes: "lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}", name: "${TARGET}"
                     }
@@ -79,10 +78,9 @@ pipeline {
                     }
 
                     steps {
-                        sh 'git clean -fdx'
                         sh "cargo run --package ${REPOSITORY_NAME}-builder --bin builder --release"
 
-                        sh "mv target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
+                        sh "mv -f target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
 
                         stash includes: "lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}", name: "${TARGET}"
                     }
@@ -99,10 +97,9 @@ pipeline {
                     }
 
                     steps {
-                        sh 'git clean -fdx'
                         sh "cargo run --package ${REPOSITORY_NAME}-builder --bin builder --release"
 
-                        sh "mv target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
+                        sh "mv -f target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
 
                         stash includes: "lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}", name: "${TARGET}"
                     }
@@ -119,10 +116,9 @@ pipeline {
                     }
 
                     steps {
-                        sh 'git clean -fdx'
                         sh "cargo run --package ${REPOSITORY_NAME}-builder --bin builder --release"
 
-                        sh "mv target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
+                        sh "mv -f target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
 
                         stash includes: "lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}", name: "${TARGET}"
                     }
@@ -142,10 +138,8 @@ pipeline {
                     }
 
                     steps {
-                        powershell 'git clean -fdx'
-
                         powershell "cargo run --package ${REPOSITORY_NAME}-builder --bin builder --release -- --target ${TARGET}"
-                        powershell "Move-Item -Path target/${TARGET}/release/${LIBRARY_NAME}.${EXTENSION} -Destination ${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
+                        powershell "Move-Item -Force -Path target/${TARGET}/release/${LIBRARY_NAME}.${EXTENSION} -Destination ${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
                         stash includes: "${LIBRARY_NAME}-${TARGET}.${EXTENSION}", name: "${TARGET}"
                     }
                 }
@@ -164,10 +158,8 @@ pipeline {
                     }
 
                     steps {
-                        powershell 'git clean -fdx'
-
                         powershell "cargo run --package ${REPOSITORY_NAME}-builder --bin builder --release -- --target ${TARGET}"
-                        powershell "Move-Item -Path target/${TARGET}/release/${LIBRARY_NAME}.${EXTENSION} -Destination ${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
+                        powershell "Move-Item -Force -Path target/${TARGET}/release/${LIBRARY_NAME}.${EXTENSION} -Destination ${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
                         stash includes: "${LIBRARY_NAME}-${TARGET}.${EXTENSION}", name: "${TARGET}"
                     }
                 }

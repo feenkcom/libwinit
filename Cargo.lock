@@ -1468,9 +1468,9 @@ dependencies = [
 
 [[package]]
 name = "value-box-ffi"
-version = "1.0.1"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ced01083b14ea1ea23ca5674148931e94ebb08cb23135c8c5bf1867c880973c"
+checksum = "f04f0d852bba02e460e87ea10e6935f2bb91f799f71dea757f2a728578109b3d"
 dependencies = [
  "geometry-box",
  "phlow",
