@@ -2,18 +2,26 @@ use geometry_box::{PointBox, SizeBox, U128Box};
 use raw_window_handle::{HasRawDisplayHandle, HasRawWindowHandle};
 use raw_window_handle_extensions::{VeryRawDisplayHandle, VeryRawWindowHandle};
 use string_box::StringBox;
-use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowExtMacOS;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd",
+))]
+use winit::platform::x11::WindowExtX11;
 use winit::window::Window;
 use winit::window::WindowBuilder;
 
-use crate::{winit_convert_window_id, WinitError};
 use crate::enums::WinitCursorIcon;
 use crate::event_loop::WinitEventLoop;
+use crate::{winit_convert_window_id, WinitError};
 
 #[no_mangle]
 pub extern "C" fn winit_create_window(
@@ -26,6 +34,7 @@ pub extern "C" fn winit_create_window(
                 debug!("Window builder: {:?}", &window_builder);
                 window_builder
                     .build(&event_loop)
+                    .map(|window| value_box!(window))
                     .map_err(|error| Into::<WinitError>::into(error).into())
             })
         })
@@ -181,6 +190,36 @@ pub extern "C" fn winit_window_get_ns_view(window_ptr: *mut ValueBox<Window>) ->
     window_ptr
         .with_ref_ok(|window| window.ns_view() as cocoa::base::id)
         .or_log(cocoa::base::nil)
+}
+
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd",
+))]
+#[no_mangle]
+pub extern "C" fn winit_window_get_xlib_display(
+    window: *mut ValueBox<Window>,
+) -> *mut std::ffi::c_void {
+    window
+        .with_ref_ok(|window| window.xlib_display().unwrap_or(std::ptr::null_mut()))
+        .or_log(std::ptr::null_mut())
+}
+
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd",
+))]
+#[no_mangle]
+pub extern "C" fn winit_window_get_xlib_window(window: *mut ValueBox<Window>) -> std::ffi::c_ulong {
+    window
+        .with_ref_ok(|window| window.xlib_window().unwrap_or(0))
+        .or_log(0)
 }
 
 #[no_mangle]

@@ -7,9 +7,8 @@ extern crate log;
 extern crate phlow;
 #[cfg(feature = "phlow")]
 extern crate phlow_extensions;
-
-// #[macro_use]
-// extern crate value_box;
+#[macro_use]
+extern crate value_box;
 
 use std::mem::transmute_copy;
 

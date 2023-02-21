@@ -342,7 +342,21 @@ impl PollingEventLoop {
         }
     }
 
+    #[cfg(target_os = "linux")]
+    unsafe fn is_main_thread() -> bool {
+        use libc::{c_long, getpid, syscall, SYS_gettid};
+
+        println!("syscall(SYS_gettid) = {}", syscall(SYS_gettid));
+        println!("getpid() = {}", getpid() as c_long);
+
+        syscall(SYS_gettid) == getpid() as c_long
+    }
+
     pub fn run(&'static mut self) {
+        unsafe {
+            Self::is_main_thread();
+        };
+
         let mut event_processor = EventProcessor::new();
         let event_loop = WinitEventLoopBuilder::with_user_event().build();
         self.event_loop_waker.proxy(event_loop.create_proxy());

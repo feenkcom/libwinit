@@ -1,10 +1,12 @@
 use std::ffi::c_void;
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget};
+use winit::event_loop::{
+    ControlFlow, EventLoop, EventLoopBuilder, EventLoopProxy, EventLoopWindowTarget,
+};
 use winit::monitor::MonitorHandle;
 
-use crate::WinitUserEvent;
-use value_box::{BoxerError, ReturnBoxerResult, ValueBox, ValueBoxPointer};
 use crate::events::{EventProcessor, WinitControlFlow, WinitEvent};
+use crate::WinitUserEvent;
+use value_box::{BoxerError, ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
 
 pub type WinitEventLoop = EventLoop<WinitUserEvent>;
 pub type WinitEventLoopBuilder = EventLoopBuilder<WinitUserEvent>;
@@ -93,25 +95,28 @@ pub extern "C" fn winit_event_loop_run_data(
     data: *mut c_void,
     callback: extern "C" fn(*mut c_void, *mut WinitEvent) -> WinitControlFlow,
 ) {
-    event_loop.take_value().map(|event_loop| {
-        let mut event_processor = EventProcessor::new();
-        event_loop.run(
-            move |event,
-                  _events_loop: &EventLoopWindowTarget<WinitUserEvent>,
-                  control_flow: &mut ControlFlow| {
-                control_flow.set_wait();
-                let mut c_event: WinitEvent = Default::default();
-                let processed = event_processor.process(event, &mut c_event);
-                if processed {
-                    let c_event_ptr = Box::into_raw(Box::new(c_event));
-                    let c_control_flow = callback(data, c_event_ptr);
-                    unsafe { Box::from_raw(c_event_ptr) };
+    event_loop
+        .take_value()
+        .map(|event_loop| {
+            let mut event_processor = EventProcessor::new();
+            event_loop.run(
+                move |event,
+                      _events_loop: &EventLoopWindowTarget<WinitUserEvent>,
+                      control_flow: &mut ControlFlow| {
+                    control_flow.set_wait();
+                    let mut c_event: WinitEvent = Default::default();
+                    let processed = event_processor.process(event, &mut c_event);
+                    if processed {
+                        let c_event_ptr = Box::into_raw(Box::new(c_event));
+                        let c_control_flow = callback(data, c_event_ptr);
+                        unsafe { Box::from_raw(c_event_ptr) };
 
-                    *control_flow = c_control_flow.into();
-                }
-            },
-        )
-    }).log();
+                        *control_flow = c_control_flow.into();
+                    }
+                },
+            )
+        })
+        .log();
 }
 
 #[no_mangle]
@@ -119,7 +124,7 @@ pub extern "C" fn winit_event_loop_create_proxy(
     event_loop: *mut ValueBox<WinitEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopProxy> {
     event_loop
-        .with_ref_ok(|event_loop| event_loop.create_proxy())
+        .with_ref_ok(|event_loop| value_box!(event_loop.create_proxy()))
         .into_raw()
 }
 
@@ -129,7 +134,6 @@ pub extern "C" fn winit_event_loop_drop_proxy(
 ) {
     event_loop_proxy.release();
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////// M O N I T O R    I D /////////////////////////////////
@@ -141,9 +145,12 @@ pub extern "C" fn winit_event_loop_get_primary_monitor(
 ) -> *mut ValueBox<MonitorHandle> {
     event_loop
         .with_ref(|event_loop| {
-            event_loop.primary_monitor().ok_or_else(|| {
-                BoxerError::AnyError("There is no monitor, or it is not supported".into())
-            })
+            event_loop
+                .primary_monitor()
+                .map(|monitor| value_box!(monitor))
+                .ok_or_else(|| {
+                    BoxerError::AnyError("There is no monitor, or it is not supported".into())
+                })
         })
         .into_raw()
 }

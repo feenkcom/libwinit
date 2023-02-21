@@ -6,6 +6,14 @@ use winit::platform::ios::WindowExtIOS;
 use winit::platform::macos::WindowExtMacOS;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd",
+))]
+use winit::platform::x11::WindowExtX11;
 use winit::window::{Window, WindowId};
 
 use crate::enums::WinitCursorIcon;
@@ -13,7 +21,7 @@ use crate::{winit_convert_window_id, PollingEventLoop, WindowRef};
 use geometry_box::{PointBox, SizeBox, U128Box};
 use raw_window_handle_extensions::{VeryRawDisplayHandle, VeryRawWindowHandle};
 use string_box::StringBox;
-use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxPointer};
+use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
 
 fn with_window<T: 'static>(
     event_loop: *mut ValueBox<PollingEventLoop>,
@@ -196,7 +204,7 @@ pub extern "C" fn winit_window_ref_get_raw_id(
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut ValueBox<WindowId> {
     window_ref
-        .with_ref_ok(|window_ref| window_ref.id())
+        .with_ref_ok(|window_ref| value_box!(window_ref.id()))
         .into_raw()
 }
 
@@ -272,6 +280,42 @@ pub extern "C" fn winit_window_ref_get_hwnd(
         Ok(unsafe { std::mem::transmute(window.hwnd()) })
     })
     .or_log(std::ptr::null_mut())
+}
+
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd",
+))]
+#[no_mangle]
+pub extern "C" fn winit_window_ref_get_xlib_display(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    window_ref: *mut ValueBox<WindowRef>,
+) -> *mut std::ffi::c_void {
+    with_window(event_loop, window_ref, |window| {
+        Ok(window.xlib_display().unwrap_or(std::ptr::null_mut()))
+    })
+    .or_log(std::ptr::null_mut())
+}
+
+#[cfg(any(
+    target_os = "linux",
+    target_os = "dragonfly",
+    target_os = "freebsd",
+    target_os = "netbsd",
+    target_os = "openbsd",
+))]
+#[no_mangle]
+pub extern "C" fn winit_window_ref_get_xlib_window(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    window_ref: *mut ValueBox<WindowRef>,
+) -> std::ffi::c_ulong {
+    with_window(event_loop, window_ref, |window| {
+        Ok(window.xlib_window().unwrap_or(0))
+    })
+    .or_log(0)
 }
 
 #[no_mangle]

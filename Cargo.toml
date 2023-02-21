@@ -2,9 +2,8 @@
 resolver = "2"
 
 members = [
-    "library",
-    "shared-library-builder/library",
-    "shared-library-builder/builder",
+    "libwinit",
+    "libwinit-builder",
 ]
 
 exclude = [ "target" ]

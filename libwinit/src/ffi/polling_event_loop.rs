@@ -10,7 +10,7 @@ use crate::{
     PollingEventLoop, WindowRedrawRequestedListener, WindowRef, WindowResizedListener,
     WinitEventLoopWaker, WinitUserEvent,
 };
-use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
 
 #[no_mangle]
 pub extern "C" fn winit_waker_wake(waker: *const c_void, event: WinitUserEvent) -> bool {
@@ -28,7 +28,7 @@ pub extern "C" fn winit_event_loop_waker_create(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> *mut ValueBox<WinitEventLoopWaker> {
     event_loop
-        .with_ref_ok(|event_loop| event_loop.event_loop_waker.clone())
+        .with_ref_ok(|event_loop| value_box!(event_loop.event_loop_waker.clone()))
         .into_raw()
 }
 
