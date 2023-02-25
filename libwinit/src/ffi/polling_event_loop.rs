@@ -151,6 +151,27 @@ pub extern "C" fn winit_polling_event_loop_count_redraw_listeners(
 }
 
 #[no_mangle]
+#[cfg(target_os = "android")]
+pub extern "C" fn winit_polling_event_loop_set_android_app(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    android_app: *mut winit::platform::android::activity::AndroidApp,
+) {
+    if android_app.is_null() {
+        Err::<(), value_box::BoxerError>(value_box::BoxerError::NullPointer(
+            std::any::type_name::<winit::platform::android::activity::AndroidApp>().to_string(),
+        ))
+        .log();
+        return;
+    }
+
+    event_loop
+        .with_mut_ok(|event_loop| {
+            event_loop.set_android_app(*unsafe { Box::from_raw(android_app) });
+        })
+        .log();
+}
+
+#[no_mangle]
 pub extern "C" fn winit_polling_event_loop_poll(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> *mut WinitEvent {

@@ -5,7 +5,7 @@ authors = ["Aliaksei Syrel <alex.syrel@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-winit = { git = "https://github.com/syrel/winit", rev = "cb781eb33456c5e3fc69f9b00aeb5a053dfcd623" }
+winit = { version = "0.28.1", features = [ "android-native-activity" ] }
 raw-window-handle = "0.5"
 raw-window-handle-extensions = "0.5"
 log = "0.4"

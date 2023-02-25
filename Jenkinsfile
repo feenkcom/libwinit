@@ -29,6 +29,8 @@ pipeline {
         LINUX_AMD64_TARGET = 'x86_64-unknown-linux-gnu'
         LINUX_ARM64_SERVER_NAME = 'peter-pan'
         LINUX_ARM64_TARGET = 'aarch64-unknown-linux-gnu'
+
+        ANDROID_ARM64_TARGET = 'aarch64-linux-android'
     }
 
     stages {
@@ -124,6 +126,26 @@ pipeline {
                     }
                 }
 
+                stage ('Android arm64') {
+                    agent {
+                        label "${MACOS_M1_TARGET}"
+                    }
+
+                    environment {
+                        TARGET = "${ANDROID_ARM64_TARGET}"
+                        EXTENSION = "so"
+                        PATH = "$HOME/.cargo/bin:/opt/homebrew/bin:$PATH"
+                    }
+
+                    steps {
+                        sh "cargo run --package ${REPOSITORY_NAME}-builder --bin builder --release -- --target ${TARGET}"
+
+                        sh "mv target/${TARGET}/release/lib${LIBRARY_NAME}.${EXTENSION} lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}"
+
+                        stash includes: "lib${LIBRARY_NAME}-${TARGET}.${EXTENSION}", name: "${TARGET}"
+                    }
+                }
+
                 stage ('Windows x86_64') {
                     agent {
                         label "${WINDOWS_AMD64_TARGET}-${WINDOWS_AMD64_SERVER_NAME}"
@@ -182,6 +204,7 @@ pipeline {
                 unstash "${LINUX_ARM64_TARGET}"
                 unstash "${MACOS_INTEL_TARGET}"
                 unstash "${MACOS_M1_TARGET}"
+                unstash "${ANDROID_ARM64_TARGET}"
                 unstash "${WINDOWS_AMD64_TARGET}"
                 unstash "${WINDOWS_ARM64_TARGET}"
 
@@ -204,6 +227,7 @@ pipeline {
                         lib${LIBRARY_NAME}-${LINUX_ARM64_TARGET}.so \
                         lib${LIBRARY_NAME}-${MACOS_INTEL_TARGET}.dylib \
                         lib${LIBRARY_NAME}-${MACOS_M1_TARGET}.dylib \
+                        lib${LIBRARY_NAME}-${ANDROID_ARM64_TARGET}.so \
                         ${LIBRARY_NAME}-${WINDOWS_AMD64_TARGET}.dll \
                         ${LIBRARY_NAME}-${WINDOWS_ARM64_TARGET}.dll \
                         winit.h """

@@ -112,3 +112,8 @@ pub fn winit_convert_window_id(window_id: WindowId) -> U128Box {
 
     id_128.into()
 }
+
+#[no_mangle]
+#[cfg(target_os = "android")]
+// required to make shared library be loadable
+fn android_main(_app: winit::platform::android::activity::AndroidApp) {}

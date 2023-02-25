@@ -411,6 +411,7 @@ impl EventProcessor {
                     WindowEvent::AxisMotion { .. } => {}
                     WindowEvent::ThemeChanged(_) => {}
                     WindowEvent::Occluded(_) => {}
+                    WindowEvent::SmartMagnify { .. } => {}
                 }
             }
 

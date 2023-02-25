@@ -1,7 +1,7 @@
 use winit::dpi::LogicalSize;
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowBuilderExtMacOS;
-use winit::window::WindowBuilder;
+use winit::window::{WindowBuilder, WindowLevel};
 
 use string_box::StringBox;
 use value_box::{ReturnBoxerResult, ValueBox, ValueBoxPointer};
@@ -98,7 +98,13 @@ pub extern "C" fn winit_window_builder_with_always_on_top(
     with_always_on_top: bool,
 ) {
     window_builder
-        .replace_value(|window_builder| window_builder.with_always_on_top(with_always_on_top))
+        .replace_value(|window_builder| {
+            let level = match with_always_on_top {
+                true => WindowLevel::AlwaysOnTop,
+                false => WindowLevel::Normal,
+            };
+            window_builder.with_window_level(level)
+        })
         .log();
 }
 

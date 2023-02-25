@@ -9,8 +9,12 @@ use value_box::{BoxerError, ReturnBoxerResult};
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, Ime, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
+#[cfg(target_os = "android")]
+use winit::platform::android::EventLoopBuilderExtAndroid;
 #[cfg(target_os = "ios")]
 use winit::platform::ios::WindowBuilderExtIOS;
+#[cfg(target_os = "windows")]
+use winit::platform::windows::EventLoopBuilderExtWindows;
 use winit::window::{Window, WindowBuilder, WindowId};
 
 use crate::event_loop::WinitEventLoopBuilder;
@@ -118,6 +122,8 @@ pub struct PollingEventLoop {
     window_redraw_listeners: Mutex<HashMap<WindowId, WindowRedrawRequestedListener>>,
     window_resize_listeners: Mutex<HashMap<WindowId, WindowResizedListener>>,
     pub(crate) running_event_loop: *const EventLoopWindowTarget<WinitUserEvent>,
+    #[cfg(target_os = "android")]
+    android_app: Option<winit::platform::android::activity::AndroidApp>,
 }
 
 impl PollingEventLoop {
@@ -131,6 +137,8 @@ impl PollingEventLoop {
             window_redraw_listeners: Default::default(),
             window_resize_listeners: Default::default(),
             running_event_loop: std::ptr::null(),
+            #[cfg(target_os = "android")]
+            android_app: None,
         }
     }
 
@@ -193,6 +201,11 @@ impl PollingEventLoop {
     ) -> Self {
         self.main_events_cleared_signaller = Some(MainEventClearedSignaller::new(callback, thunk));
         self
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn set_android_app(&mut self, android_app: winit::platform::android::activity::AndroidApp) {
+        self.android_app = Some(android_app)
     }
 
     pub fn poll(&mut self) -> Option<WinitEvent> {
@@ -344,7 +357,21 @@ impl PollingEventLoop {
 
     pub fn run(&'static mut self) {
         let mut event_processor = EventProcessor::new();
-        let event_loop = WinitEventLoopBuilder::with_user_event().build();
+
+        let mut event_loop_builder = WinitEventLoopBuilder::with_user_event();
+        #[cfg(target_os = "android")]
+        event_loop_builder.with_android_app(
+            self.android_app
+                .take()
+                .expect("AndroidApp must be initialized"),
+        );
+        // When using winit via ffi the main thread detection mechanism implemented by winit
+        // does not work on windows. Windows does not have a concept or a way to detect
+        // if some given thread is a main thread.
+        #[cfg(target_os = "windows")]
+        event_loop_builder.with_any_thread(true);
+
+        let event_loop = event_loop_builder.build();
         self.event_loop_waker.proxy(event_loop.create_proxy());
 
         event_loop.run(move |event, event_loop, control_flow: &mut ControlFlow| {
