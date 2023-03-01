@@ -9,12 +9,14 @@ use value_box::{BoxerError, ReturnBoxerResult};
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, Ime, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowTarget};
-#[cfg(target_os = "android")]
+#[cfg(android_platform)]
 use winit::platform::android::EventLoopBuilderExtAndroid;
 #[cfg(target_os = "ios")]
 use winit::platform::ios::WindowBuilderExtIOS;
-#[cfg(target_os = "windows")]
+#[cfg(windows_platform)]
 use winit::platform::windows::EventLoopBuilderExtWindows;
+#[cfg(x11_platform)]
+use winit::platform::x11::EventLoopBuilderExtX11;
 use winit::window::{Window, WindowBuilder, WindowId};
 
 use crate::event_loop::{WinitEventLoopBuilder, WinitEventLoopType};
@@ -359,7 +361,7 @@ impl PollingEventLoop {
         let mut event_processor = EventProcessor::new();
 
         let mut event_loop_builder = WinitEventLoopBuilder::with_user_event();
-        #[cfg(target_os = "android")]
+        #[cfg(android_platform)]
         event_loop_builder.with_android_app(
             self.android_app
                 .take()
@@ -368,8 +370,11 @@ impl PollingEventLoop {
         // When using winit via ffi the main thread detection mechanism implemented by winit
         // does not work on windows. Windows does not have a concept or a way to detect
         // if some given thread is a main thread.
-        #[cfg(target_os = "windows")]
+        #[cfg(windows_platform)]
         event_loop_builder.with_any_thread(true);
+
+        #[cfg(x11_platform)]
+        event_loop_builder.with_x11();
 
         let event_loop = event_loop_builder.build();
         self.event_loop_waker.proxy(event_loop.create_proxy());
