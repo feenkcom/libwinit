@@ -26,13 +26,13 @@ use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPo
 fn with_window<T: 'static>(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
-    callback: impl FnOnce(&Window) -> Result<T>,
+    callback: impl FnOnce(&Window, &PollingEventLoop) -> Result<T>,
 ) -> Result<T> {
     event_loop.with_ref(|event_loop| {
         window_ref.with_ref(|window_ref| {
             event_loop
                 .with_window(&window_ref.id(), |window| {
-                    callback(window).map_err(|error| error.into())
+                    callback(window, event_loop).map_err(|error| error.into())
                 })
                 .map_err(|err| err.boxed().into())
         })
@@ -62,7 +62,7 @@ pub extern "C" fn winit_window_ref_raw_window_handle(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut VeryRawWindowHandle {
-    with_window(event_loop, window_ref, |window| {
+    with_window(event_loop, window_ref, |window, _event_loop| {
         Ok(VeryRawWindowHandle::from(window.raw_window_handle()))
     })
     .map(|handle| handle.into())
@@ -76,7 +76,7 @@ pub extern "C" fn winit_window_ref_raw_display_handle(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut VeryRawDisplayHandle {
-    with_window(event_loop, window_ref, |window| {
+    with_window(event_loop, window_ref, |window, _event_loop| {
         Ok(VeryRawDisplayHandle::from(window.raw_display_handle()))
     })
     .map(|handle| handle.into())
@@ -89,7 +89,10 @@ pub extern "C" fn winit_window_ref_request_redraw(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) {
-    with_window(event_loop, window_ref, |window| Ok(window.request_redraw())).log();
+    with_window(event_loop, window_ref, |window, _event_loop| {
+        Ok(window.request_redraw())
+    })
+    .log();
 }
 
 /// Get the scaled factor of the window. Can be called from the any thread.
@@ -255,7 +258,7 @@ pub extern "C" fn winit_window_ref_get_ns_view(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> cocoa::base::id {
-    with_window(event_loop, window_ref, |window| {
+    with_window(event_loop, window_ref, |window, _event_loop| {
         Ok(window.ns_view() as cocoa::base::id)
     })
     .or_log(cocoa::base::nil)
@@ -267,7 +270,10 @@ pub extern "C" fn winit_window_ref_get_ns_view(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut std::ffi::c_void {
-    with_window(event_loop, window_ref, |window| Ok(window.ui_view())).or_log(std::ptr::null_mut())
+    with_window(event_loop, window_ref, |window, _event_loop| {
+        Ok(window.ui_view())
+    })
+    .or_log(std::ptr::null_mut())
 }
 
 #[cfg(target_os = "windows")]
@@ -276,44 +282,46 @@ pub extern "C" fn winit_window_ref_get_hwnd(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut std::ffi::c_void {
-    with_window(event_loop, window_ref, |window| {
+    with_window(event_loop, window_ref, |window, _event_loop| {
         Ok(unsafe { std::mem::transmute(window.hwnd()) })
     })
     .or_log(std::ptr::null_mut())
 }
 
-#[cfg(any(
-    target_os = "linux",
-    target_os = "dragonfly",
-    target_os = "freebsd",
-    target_os = "netbsd",
-    target_os = "openbsd",
-))]
+#[cfg(x11_platform)]
 #[no_mangle]
 pub extern "C" fn winit_window_ref_get_xlib_display(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> *mut std::ffi::c_void {
-    with_window(event_loop, window_ref, |window| {
-        Ok(window.xlib_display().unwrap_or(std::ptr::null_mut()))
+    with_window(event_loop, window_ref, |window, event_loop| {
+        window.xlib_display().ok_or_else(|| {
+            format!(
+                "Window (id: {:?}, type: {:?}) does not support X11",
+                window.id(),
+                event_loop.get_type()
+            )
+            .into()
+        })
     })
     .or_log(std::ptr::null_mut())
 }
 
-#[cfg(any(
-    target_os = "linux",
-    target_os = "dragonfly",
-    target_os = "freebsd",
-    target_os = "netbsd",
-    target_os = "openbsd",
-))]
+#[cfg(x11_platform)]
 #[no_mangle]
 pub extern "C" fn winit_window_ref_get_xlib_window(
     event_loop: *mut ValueBox<PollingEventLoop>,
     window_ref: *mut ValueBox<WindowRef>,
 ) -> std::ffi::c_ulong {
-    with_window(event_loop, window_ref, |window| {
-        Ok(window.xlib_window().unwrap_or(0))
+    with_window(event_loop, window_ref, |window, event_loop| {
+        window.xlib_window().ok_or_else(|| {
+            format!(
+                "Window (id: {:?}, type: {:?}) does not support X11",
+                window.id(),
+                event_loop.get_type()
+            )
+            .into()
+        })
     })
     .or_log(0)
 }

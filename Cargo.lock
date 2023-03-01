@@ -585,6 +585,7 @@ dependencies = [
 name = "libwinit"
 version = "0.5.0"
 dependencies = [
+ "cfg_aliases",
  "cocoa",
  "env_logger",
  "geometry-box",

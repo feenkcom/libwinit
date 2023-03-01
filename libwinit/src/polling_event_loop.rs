@@ -17,7 +17,7 @@ use winit::platform::ios::WindowBuilderExtIOS;
 use winit::platform::windows::EventLoopBuilderExtWindows;
 use winit::window::{Window, WindowBuilder, WindowId};
 
-use crate::event_loop::WinitEventLoopBuilder;
+use crate::event_loop::{WinitEventLoopBuilder, WinitEventLoopType};
 use crate::events::{
     winit_event_loop_process_received_character, EventProcessor, WinitEvent, WinitEventType,
 };
@@ -445,6 +445,37 @@ impl PollingEventLoop {
         } else {
             Some(unsafe { &*self.running_event_loop })
         }
+    }
+
+    #[cfg(any(x11_platform, wayland_platform))]
+    pub fn get_type(&self) -> WinitEventLoopType {
+        use winit::platform::wayland::EventLoopWindowTargetExtWayland;
+        use winit::platform::x11::EventLoopWindowTargetExtX11;
+
+        if let Some(event_loop) = self.event_loop() {
+            if event_loop.is_wayland() {
+                return WinitEventLoopType::Wayland;
+            }
+            if event_loop.is_x11() {
+                return WinitEventLoopType::X11;
+            }
+        }
+        return WinitEventLoopType::Unknown;
+    }
+
+    #[cfg(windows_platform)]
+    pub fn get_type(&self) -> WinitEventLoopType {
+        WinitEventLoopType::Windows
+    }
+
+    #[cfg(macos_platform)]
+    pub fn get_event_loop_type(&self) -> WinitEventLoopType {
+        WinitEventLoopType::MacOS
+    }
+
+    #[cfg(android_platform)]
+    pub fn get_type(&self) -> WinitEventLoopType {
+        WinitEventLoopType::Unknown
     }
 }
 
