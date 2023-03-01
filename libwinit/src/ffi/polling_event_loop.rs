@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 use winit::window::{WindowBuilder, WindowId};
 
-use crate::event_loop::{get_event_loop_type, WinitEventLoopType};
+use crate::event_loop::WinitEventLoopType;
 use crate::events::WinitEvent;
 use crate::{
     PollingEventLoop, WindowRedrawRequestedListener, WindowRef, WindowResizedListener,
@@ -202,13 +202,7 @@ pub extern "C" fn winit_polling_event_loop_get_type(
     event_loop: *mut ValueBox<PollingEventLoop>,
 ) -> WinitEventLoopType {
     event_loop
-        .with_ref_ok(|event_loop| {
-            event_loop
-                .event_loop()
-                .map_or(WinitEventLoopType::Unknown, |event_loop| {
-                    get_event_loop_type(event_loop)
-                })
-        })
+        .with_ref_ok(|event_loop| event_loop.get_type())
         .or_log(WinitEventLoopType::Unknown)
 }
 

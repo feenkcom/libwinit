@@ -474,7 +474,7 @@ impl PollingEventLoop {
     }
 
     #[cfg(macos_platform)]
-    pub fn get_event_loop_type(&self) -> WinitEventLoopType {
+    pub fn get_type(&self) -> WinitEventLoopType {
         WinitEventLoopType::MacOS
     }
 

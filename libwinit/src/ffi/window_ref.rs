@@ -4,15 +4,11 @@ use winit::dpi::{PhysicalPosition, PhysicalSize};
 use winit::platform::ios::WindowExtIOS;
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowExtMacOS;
+#[cfg(wayland_platform)]
+use winit::platform::wayland::WindowExtWayland;
 #[cfg(target_os = "windows")]
 use winit::platform::windows::WindowExtWindows;
-#[cfg(any(
-    target_os = "linux",
-    target_os = "dragonfly",
-    target_os = "freebsd",
-    target_os = "netbsd",
-    target_os = "openbsd",
-))]
+#[cfg(x11_platform)]
 use winit::platform::x11::WindowExtX11;
 use winit::window::{Window, WindowId};
 
@@ -324,6 +320,44 @@ pub extern "C" fn winit_window_ref_get_xlib_window(
         })
     })
     .or_log(0)
+}
+
+#[cfg(wayland_platform)]
+#[no_mangle]
+pub extern "C" fn winit_window_ref_get_wayland_surface(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    window_ref: *mut ValueBox<WindowRef>,
+) -> *mut std::ffi::c_void {
+    with_window(event_loop, window_ref, |window, event_loop| {
+        window.wayland_surface().ok_or_else(|| {
+            format!(
+                "Window (id: {:?}, type: {:?}) does not support Wayland",
+                window.id(),
+                event_loop.get_type()
+            )
+            .into()
+        })
+    })
+    .or_log(std::ptr::null_mut())
+}
+
+#[cfg(wayland_platform)]
+#[no_mangle]
+pub extern "C" fn winit_window_ref_get_wayland_display(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    window_ref: *mut ValueBox<WindowRef>,
+) -> *mut std::ffi::c_void {
+    with_window(event_loop, window_ref, |window, event_loop| {
+        window.wayland_display().ok_or_else(|| {
+            format!(
+                "Window (id: {:?}, type: {:?}) does not support Wayland",
+                window.id(),
+                event_loop.get_type()
+            )
+            .into()
+        })
+    })
+    .or_log(std::ptr::null_mut())
 }
 
 #[no_mangle]
