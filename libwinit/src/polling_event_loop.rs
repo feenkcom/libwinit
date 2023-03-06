@@ -15,8 +15,6 @@ use winit::platform::android::EventLoopBuilderExtAndroid;
 use winit::platform::ios::WindowBuilderExtIOS;
 #[cfg(windows_platform)]
 use winit::platform::windows::EventLoopBuilderExtWindows;
-#[cfg(x11_platform)]
-use winit::platform::x11::EventLoopBuilderExtX11;
 use winit::window::{Window, WindowBuilder, WindowId};
 
 use crate::event_loop::{WinitEventLoopBuilder, WinitEventLoopType};
@@ -372,9 +370,6 @@ impl PollingEventLoop {
         // if some given thread is a main thread.
         #[cfg(windows_platform)]
         event_loop_builder.with_any_thread(true);
-
-        #[cfg(x11_platform)]
-        event_loop_builder.with_x11();
 
         let event_loop = event_loop_builder.build();
         self.event_loop_waker.proxy(event_loop.create_proxy());
