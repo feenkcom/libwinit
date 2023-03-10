@@ -378,8 +378,10 @@ impl PollingEventLoop {
             self.running_event_loop = event_loop as *const EventLoopWindowTarget<WinitUserEvent>;
             *control_flow = ControlFlow::Wait;
 
+            trace!("{:?}", &event);
+
             let result = match &event {
-                Event::UserEvent(value) => Ok(trace!("Received UserEvent({:?})", value)),
+                Event::UserEvent(value) => Ok(debug!("Received UserEvent({:?})", value)),
                 Event::RedrawRequested(window_id) => self.on_redraw_requested(window_id),
                 Event::WindowEvent { window_id, event } => match event {
                     WindowEvent::Resized(size) => self.on_window_resized(window_id, size),
@@ -398,6 +400,7 @@ impl PollingEventLoop {
                                     c_event.window_id.clone_from(&id);
                                     winit_event_loop_process_received_character(&mut c_event, char);
                                     self.push(c_event);
+                                    self.signal_semaphore();
                                 }
                             }
                             Ime::Disabled => {}
