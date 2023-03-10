@@ -428,9 +428,7 @@ impl PollingEventLoop {
                     self.signal_semaphore();
                 }
 
-                if event_type == WinitEventType::MainEventsCleared
-                    || event_type == WinitEventType::RedrawEventsCleared
-                {
+                if event_type == WinitEventType::MainEventsCleared {
                     self.signal_main_events_cleared();
                 }
             }
