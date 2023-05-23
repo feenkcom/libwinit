@@ -13,6 +13,8 @@ use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy, EventLoopWindowT
 use winit::platform::android::EventLoopBuilderExtAndroid;
 #[cfg(target_os = "ios")]
 use winit::platform::ios::WindowBuilderExtIOS;
+#[cfg(macos_platform)]
+use winit::platform::macos::EventLoopBuilderExtMacOS;
 #[cfg(windows_platform)]
 use winit::platform::windows::EventLoopBuilderExtWindows;
 use winit::window::{Window, WindowBuilder, WindowId};
@@ -370,6 +372,9 @@ impl PollingEventLoop {
         // if some given thread is a main thread.
         #[cfg(windows_platform)]
         event_loop_builder.with_any_thread(true);
+
+        #[cfg(macos_platform)]
+        event_loop_builder.with_default_menu(false);
 
         let event_loop = event_loop_builder.build();
         self.event_loop_waker.proxy(event_loop.create_proxy());
