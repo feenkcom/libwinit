@@ -321,6 +321,12 @@ impl EventProcessor {
                         c_event.event_type = WinitEventType::WindowEventResized;
                         c_event.window_resized.width = width;
                         c_event.window_resized.height = height;
+
+                        // (Windows) when a window is minimized, its size is set to 0x0,
+                        // while it shouldn't actually change, so we just ignore the event
+                        if width == 0 && height == 0 {
+                            result = false
+                        }
                     }
                     WindowEvent::ScaleFactorChanged {
                         scale_factor,

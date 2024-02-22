@@ -245,6 +245,12 @@ impl PollingEventLoop {
 
     /// Is called when a window is resized
     fn on_window_resized(&mut self, window_id: &WindowId, size: &PhysicalSize<u32>) -> Result<()> {
+        // (Windows) when a window is minimized, its size is set to 0x0,
+        // while it shouldn't actually change, so we just ignore the event
+        if size.width == 0 && size.height == 0 {
+            return Ok(())
+        }
+
         self.with_window_mut(window_id, |_window, window_ref| {
             window_ref.set_inner_size(size.clone())
         })?;
