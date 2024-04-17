@@ -248,6 +248,17 @@ pub extern "C" fn winit_window_ref_set_maximized(
     .log();
 }
 
+#[no_mangle]
+pub extern "C" fn winit_window_ref_focus_window(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    window_ref: *mut ValueBox<WindowRef>,
+) {
+    with_window(event_loop, window_ref, |window, _event_loop| {
+        Ok(window.focus_window())
+    })
+    .log();
+}
+
 #[cfg(target_os = "macos")]
 #[no_mangle]
 pub extern "C" fn winit_window_ref_get_ns_view(

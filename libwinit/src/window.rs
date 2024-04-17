@@ -174,6 +174,11 @@ pub extern "C" fn winit_window_set_maximized(window: *mut ValueBox<Window>, maxi
         .log();
 }
 
+#[no_mangle]
+pub extern "C" fn winit_window_focus_window(window: *mut ValueBox<Window>) {
+    window.with_ref_ok(|window| window.focus_window()).log();
+}
+
 #[cfg(target_os = "windows")]
 #[no_mangle]
 pub extern "C" fn winit_window_get_hwnd(

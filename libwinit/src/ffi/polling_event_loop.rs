@@ -104,10 +104,8 @@ pub extern "C" fn winit_polling_event_loop_add_resize_listener(
     event_loop
         .with_mut(|event_loop| {
             window_id.with_ref(|window_id| {
-                Ok(event_loop.add_resize_listener(
-                    window_id.deref(),
-                    WindowResizedListener::new(callback, thunk),
-                ))
+                Ok(event_loop
+                    .add_resize_listener(window_id, WindowResizedListener::new(callback, thunk)))
             })
         })
         .log();
@@ -133,7 +131,7 @@ pub extern "C" fn winit_polling_event_loop_add_redraw_listener(
         .with_mut(|event_loop| {
             window_id.with_ref(|window_id| {
                 Ok(event_loop.add_redraw_listener(
-                    window_id.deref(),
+                    window_id,
                     WindowRedrawRequestedListener::new(callback, thunk),
                 ))
             })

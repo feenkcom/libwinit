@@ -248,7 +248,7 @@ impl PollingEventLoop {
         // (Windows) when a window is minimized, its size is set to 0x0,
         // while it shouldn't actually change, so we just ignore the event
         if size.width == 0 && size.height == 0 {
-            return Ok(())
+            return Ok(());
         }
 
         self.with_window_mut(window_id, |_window, window_ref| {
