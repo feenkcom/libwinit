@@ -664,5 +664,7 @@ pub extern "C" fn winit_event_drop(ptr: *mut WinitEvent) {
     if ptr.is_null() {
         return;
     }
-    unsafe { Box::from_raw(ptr) };
+    unsafe {
+        let _ = Box::from_raw(ptr);
+    };
 }

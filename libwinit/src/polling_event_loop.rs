@@ -263,7 +263,7 @@ impl PollingEventLoop {
         Ok(())
     }
 
-    /// Is called when windows's scale changed
+    /// Is called when window's scale changed
     fn on_window_scale_changed(
         &mut self,
         window_id: &WindowId,

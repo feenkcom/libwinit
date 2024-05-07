@@ -1,16 +1,15 @@
 use std::ffi::c_void;
 use std::mem::transmute;
-use std::ops::Deref;
 
+use value_box::{ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
 use winit::window::{WindowBuilder, WindowId};
 
-use crate::event_loop::WinitEventLoopType;
-use crate::events::WinitEvent;
 use crate::{
     PollingEventLoop, WindowRedrawRequestedListener, WindowRef, WindowResizedListener,
     WinitEventLoopWaker, WinitUserEvent,
 };
-use value_box::{ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
+use crate::event_loop::WinitEventLoopType;
+use crate::events::WinitEvent;
 
 #[no_mangle]
 pub extern "C" fn winit_waker_wake(waker: *const c_void, event: WinitUserEvent) -> bool {
