@@ -120,7 +120,7 @@ pub struct PollingEventLoop {
     events: Mutex<VecDeque<WinitEvent>>,
     pub(crate) event_loop_waker: WinitEventLoopWaker,
     semaphore_signaller: Option<SemaphoreSignaller>,
-    main_events_cleared_signaller: Option<MainEventClearedSignaller>,
+    main_events_cleared_signallers: Mutex<Vec<MainEventClearedSignaller>>,
     window_redraw_listeners: Mutex<HashMap<WindowId, WindowRedrawRequestedListener>>,
     window_resize_listeners: Mutex<HashMap<WindowId, WindowResizedListener>>,
     pub(crate) running_event_loop: *const EventLoopWindowTarget<WinitUserEvent>,
@@ -135,7 +135,7 @@ impl PollingEventLoop {
             events: Mutex::new(VecDeque::new()),
             event_loop_waker: WinitEventLoopWaker::new(),
             semaphore_signaller: None,
-            main_events_cleared_signaller: None,
+            main_events_cleared_signallers: Default::default(),
             window_redraw_listeners: Default::default(),
             window_resize_listeners: Default::default(),
             running_event_loop: std::ptr::null(),
@@ -197,12 +197,22 @@ impl PollingEventLoop {
     }
 
     pub fn with_main_events_signaller(
-        mut self,
+        self,
         callback: extern "C" fn(*const c_void),
         thunk: *const c_void,
     ) -> Self {
-        self.main_events_cleared_signaller = Some(MainEventClearedSignaller::new(callback, thunk));
+        self.add_main_events_signaller(callback, thunk);
         self
+    }
+
+    pub fn add_main_events_signaller(
+        &self,
+        callback: extern "C" fn(*const c_void),
+        thunk: *const c_void,
+    ) {
+        self.main_events_cleared_signallers
+            .lock()
+            .push(MainEventClearedSignaller::new(callback, thunk));
     }
 
     #[cfg(target_os = "android")]
@@ -229,7 +239,7 @@ impl PollingEventLoop {
     }
 
     pub fn signal_main_events_cleared(&self) {
-        if let Some(signaller) = self.main_events_cleared_signaller.as_ref() {
+        for signaller in self.main_events_cleared_signallers.lock().iter() {
             signaller.signal()
         }
     }
@@ -394,32 +404,38 @@ impl PollingEventLoop {
             let result = match &event {
                 Event::UserEvent(value) => Ok(debug!("Received UserEvent({:?})", value)),
                 Event::RedrawRequested(window_id) => self.on_redraw_requested(window_id),
-                Event::WindowEvent { window_id, event } => match event {
-                    WindowEvent::Resized(size) => self.on_window_resized(window_id, size),
-                    WindowEvent::ScaleFactorChanged {
-                        scale_factor,
-                        new_inner_size,
-                    } => self.on_window_scale_changed(window_id, scale_factor, new_inner_size),
-                    WindowEvent::Ime(ime) => {
-                        match ime {
-                            Ime::Enabled => {}
-                            Ime::Preedit(_, _) => {}
-                            Ime::Commit(string) => {
-                                for char in string.chars() {
-                                    let mut c_event = WinitEvent::default();
-                                    let id: U128Box = winit_convert_window_id(window_id.clone());
-                                    c_event.window_id.clone_from(&id);
-                                    winit_event_loop_process_received_character(&mut c_event, char);
-                                    self.push(c_event);
-                                    self.signal_semaphore();
+                Event::WindowEvent { window_id, event } => {
+                    match event {
+                        WindowEvent::Resized(size) => self.on_window_resized(window_id, size),
+                        WindowEvent::ScaleFactorChanged {
+                            scale_factor,
+                            new_inner_size,
+                        } => self.on_window_scale_changed(window_id, scale_factor, new_inner_size),
+                        WindowEvent::Ime(ime) => {
+                            match ime {
+                                Ime::Enabled => {}
+                                Ime::Preedit(_, _) => {}
+                                Ime::Commit(string) => {
+                                    for char in string.chars() {
+                                        let mut c_event = WinitEvent::default();
+                                        let id: U128Box =
+                                            winit_convert_window_id(window_id.clone());
+                                        c_event.window_id.clone_from(&id);
+                                        winit_event_loop_process_received_character(
+                                            &mut c_event,
+                                            char,
+                                        );
+                                        self.push(c_event);
+                                        self.signal_semaphore();
+                                    }
                                 }
+                                Ime::Disabled => {}
                             }
-                            Ime::Disabled => {}
+                            Ok(())
                         }
-                        Ok(())
+                        _ => Ok(()),
                     }
-                    _ => Ok(()),
-                },
+                }
                 _ => Ok(()),
             };
 

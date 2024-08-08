@@ -4,12 +4,12 @@ use std::mem::transmute;
 use value_box::{ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
 use winit::window::{WindowBuilder, WindowId};
 
+use crate::event_loop::WinitEventLoopType;
+use crate::events::WinitEvent;
 use crate::{
     PollingEventLoop, WindowRedrawRequestedListener, WindowRef, WindowResizedListener,
     WinitEventLoopWaker, WinitUserEvent,
 };
-use crate::event_loop::WinitEventLoopType;
-use crate::events::WinitEvent;
 
 #[no_mangle]
 pub extern "C" fn winit_waker_wake(waker: *const c_void, event: WinitUserEvent) -> bool {
@@ -106,6 +106,19 @@ pub extern "C" fn winit_polling_event_loop_add_resize_listener(
                 Ok(event_loop
                     .add_resize_listener(window_id, WindowResizedListener::new(callback, thunk)))
             })
+        })
+        .log();
+}
+
+#[no_mangle]
+pub extern "C" fn winit_polling_event_loop_add_main_events_signaller(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    callback: extern "C" fn(*const c_void),
+    thunk: *const c_void,
+) {
+    event_loop
+        .with_ref_ok(|event_loop| {
+            event_loop.add_main_events_signaller(callback, thunk);
         })
         .log();
 }
