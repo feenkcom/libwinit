@@ -109,7 +109,9 @@ pub extern "C" fn winit_event_loop_run_data(
                     if processed {
                         let c_event_ptr = Box::into_raw(Box::new(c_event));
                         let c_control_flow = callback(data, c_event_ptr);
-                        unsafe { let _ = Box::from_raw(c_event_ptr); };
+                        unsafe {
+                            let _ = Box::from_raw(c_event_ptr);
+                        };
 
                         *control_flow = c_control_flow.into();
                     }
@@ -148,23 +150,9 @@ pub extern "C" fn winit_event_loop_get_primary_monitor(
             event_loop
                 .primary_monitor()
                 .map(|monitor| value_box!(monitor))
-                .ok_or_else(|| {
-                    BoxerError::AnyError("There is no monitor, or it is not supported".into())
-                })
+                .ok_or_else(
+                    || BoxerError::AnyError("There is no monitor, or it is not supported".into())
+                )
         })
         .into_raw()
-}
-
-#[no_mangle]
-pub extern "C" fn winit_primary_monitor_get_hidpi_factor(
-    monitor_handle: *mut ValueBox<MonitorHandle>,
-) -> f64 {
-    monitor_handle
-        .with_ref_ok(|monitor_handle| monitor_handle.scale_factor())
-        .or_log(1.0)
-}
-
-#[no_mangle]
-pub extern "C" fn winit_primary_monitor_drop(ptr: *mut ValueBox<MonitorHandle>) {
-    ptr.release();
 }

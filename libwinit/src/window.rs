@@ -4,6 +4,7 @@ use raw_window_handle_extensions::{VeryRawDisplayHandle, VeryRawWindowHandle};
 use string_box::StringBox;
 use value_box::{ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
 use winit::dpi::{PhysicalPosition, PhysicalSize};
+use winit::monitor::MonitorHandle;
 #[cfg(target_os = "macos")]
 use winit::platform::macos::WindowExtMacOS;
 #[cfg(target_os = "windows")]
@@ -225,6 +226,20 @@ pub extern "C" fn winit_window_get_xlib_window(window: *mut ValueBox<Window>) ->
     window
         .with_ref_ok(|window| window.xlib_window().unwrap_or(0))
         .or_log(0)
+}
+
+#[no_mangle]
+pub extern "C" fn winit_window_current_monitor(
+    window: *mut ValueBox<Window>,
+) -> *mut ValueBox<MonitorHandle> {
+    window
+        .with_ref_ok(|window| {
+            window
+                .current_monitor()
+                .map(|monitor| ValueBox::new(monitor).into_raw())
+                .unwrap_or(std::ptr::null_mut())
+        })
+        .or_log(std::ptr::null_mut())
 }
 
 #[no_mangle]

@@ -18,6 +18,7 @@ use geometry_box::{PointBox, SizeBox, U128Box};
 use raw_window_handle_extensions::{VeryRawDisplayHandle, VeryRawWindowHandle};
 use string_box::StringBox;
 use value_box::{Result, ReturnBoxerResult, ValueBox, ValueBoxIntoRaw, ValueBoxPointer};
+use winit::monitor::MonitorHandle;
 
 fn with_window<T: 'static>(
     event_loop: *mut ValueBox<PollingEventLoop>,
@@ -367,6 +368,20 @@ pub extern "C" fn winit_window_ref_get_wayland_display(
             )
             .into()
         })
+    })
+    .or_log(std::ptr::null_mut())
+}
+
+#[no_mangle]
+pub extern "C" fn winit_window_ref_current_monitor(
+    event_loop: *mut ValueBox<PollingEventLoop>,
+    window_ref: *mut ValueBox<WindowRef>,
+) -> *mut ValueBox<MonitorHandle> {
+    with_window(event_loop, window_ref, |window, _event_loop| {
+        Ok(window
+            .current_monitor()
+            .map(|monitor| ValueBox::new(monitor).into_raw())
+            .unwrap_or(std::ptr::null_mut()))
     })
     .or_log(std::ptr::null_mut())
 }

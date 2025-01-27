@@ -66,9 +66,9 @@ pub extern "C" fn winit_window_builder_with_dimensions(
     height: f64,
 ) {
     window_builder
-        .replace_value(|window_builder| {
-            window_builder.with_inner_size(LogicalSize::new(width, height))
-        })
+        .replace_value(
+            |window_builder| window_builder.with_inner_size(LogicalSize::new(width, height))
+        )
         .log();
 }
 

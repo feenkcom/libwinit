@@ -36,6 +36,7 @@ pub use window_ref::WindowRef;
 mod enums;
 mod error;
 mod event_loop;
+
 #[cfg(any(
     target_os = "windows",
     target_os = "macos",
@@ -49,6 +50,7 @@ mod event_loop;
 mod event_loop_run_return;
 mod events;
 mod ffi;
+mod monitor;
 mod polling_event_loop;
 mod window;
 mod window_builder;

@@ -27,7 +27,9 @@ pub extern "C" fn winit_event_loop_run_return(
                     if processed {
                         let c_event_ptr = Box::into_raw(Box::new(c_event));
                         let c_control_flow = callback(c_event_ptr);
-                        unsafe { let _ = Box::from_raw(c_event_ptr); };
+                        unsafe {
+                            let _ = Box::from_raw(c_event_ptr);
+                        };
                         match c_control_flow {
                             WinitControlFlow::Poll => *control_flow = ControlFlow::Poll,
                             WinitControlFlow::Wait => {
@@ -67,7 +69,9 @@ pub extern "C" fn winit_event_loop_run_return_data(
                     if processed {
                         let c_event_ptr = Box::into_raw(Box::new(c_event));
                         let c_control_flow = callback(data, c_event_ptr);
-                        unsafe { let _ = Box::from_raw(c_event_ptr); };
+                        unsafe {
+                            let _ = Box::from_raw(c_event_ptr);
+                        };
                         *control_flow = c_control_flow.into();
                     }
                 },
