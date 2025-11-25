@@ -65,12 +65,14 @@ import_extensions!(CoreExtensions);
 
 #[no_mangle]
 pub extern "C" fn winit_test() -> bool {
-    return true;
+    true
 }
 
 #[no_mangle]
 pub extern "C" fn winit_init_logger() {
-    env_logger::init();
+    if let Err(error) = env_logger::try_init() {
+        error!("Failed to initialize logger: {}", error);
+    }
 }
 
 #[no_mangle]
